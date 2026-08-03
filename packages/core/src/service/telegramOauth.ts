@@ -89,3 +89,36 @@ export function getTgAuthResult(): string | false {
         return false;
     }
 }
+
+/**
+ * Sends Telegram OAuth result to the opener window via postMessage.
+ * Used in popup OAuth flow on web and desktop platforms.
+ * Mobile uses a different mechanism (Native Bridge + CustomEvent).
+ *
+ * @param tgAuthResult - Base64 encoded string with auth data from URL hash
+ * @returns true if successfully sent and window closed, false if no opener or error
+ */
+export function sendTgAuthResultToOpener(tgAuthResult: string): boolean {
+    const currentWindow = getWindow();
+
+    if (!currentWindow?.opener) {
+        return false;
+    }
+
+    try {
+        const authData: TGLoginData = JSON.parse(atob(tgAuthResult));
+        // Restrict delivery to a same-origin opener. The legitimate opener is the Tonkeeper
+        // app that opened this popup, so it always shares the popup's origin. Using '*' here
+        // would leak the Telegram identity to any cross-origin opener (e.g. a phishing site
+        // that opened the OAuth popup with return_to pointing back at us).
+        currentWindow.opener.postMessage(
+            JSON.stringify({ event: 'auth_result', result: authData }),
+            currentWindow.location.origin
+        );
+        currentWindow.close();
+        return true;
+    } catch (e) {
+        console.error('Failed to send tg auth result to opener', e);
+        return false;
+    }
+}

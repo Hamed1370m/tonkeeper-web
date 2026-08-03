@@ -12,6 +12,7 @@ import {
 import { DNSApi } from '../tonApiV2';
 import { APIConfig } from '../entries/apis';
 import { JettonEncoder, JettonWalletNotFound } from './ton-blockchain/encoder/jetton-encoder';
+import { TonAsset } from '../entries/crypto/asset/ton-asset';
 
 export function seeIfBringToFrontLink(options: { url: string }) {
     const { query } = queryString.parseUrl(options.url);
@@ -35,11 +36,129 @@ export interface TronTransferParams {
     amount?: string;
 }
 
+export interface SwapDeeplinkParams {
+    fromToken?: string;
+    toToken?: string;
+}
+
+export interface PoolDeeplinkParams {
+    poolAddress: string;
+}
+
+export type BrowserDeeplinkParams = Record<string, never>;
+
+const TETHER_SIGN = '\u20ae';
+
+export const normalizeSwapDeeplinkToken = (value: string) =>
+    value.trim().toUpperCase().replace(new RegExp(TETHER_SIGN, 'g'), 'T');
+
+export const findSwapAssetByDeeplinkToken = (assets: TonAsset[], token: string) => {
+    const trimmedToken = token.trim();
+    const normalizedToken = normalizeSwapDeeplinkToken(trimmedToken);
+    const tokenAddress = seeIfValidTonAddress(trimmedToken)
+        ? Address.parse(trimmedToken)
+        : undefined;
+
+    return assets.find(asset => {
+        const normalizedSymbol = normalizeSwapDeeplinkToken(asset.symbol);
+
+        return (
+            normalizedSymbol === normalizedToken ||
+            (tokenAddress !== undefined &&
+                Address.isAddress(asset.address) &&
+                tokenAddress.equals(asset.address))
+        );
+    });
+};
+
+export function parseSwapDeeplink(url: string): SwapDeeplinkParams | null {
+    try {
+        const data = queryString.parseUrl(url);
+        const paths = getUrlPaths(data.url);
+
+        if (paths.length !== 1 || paths[0] !== 'swap') {
+            return null;
+        }
+
+        const fromToken = typeof data.query.ft === 'string' ? data.query.ft : undefined;
+        const toToken = typeof data.query.tt === 'string' ? data.query.tt : undefined;
+
+        return { fromToken, toToken };
+    } catch (e) {
+        return null;
+    }
+}
+
+export function parsePoolDeeplink(url: string): PoolDeeplinkParams | null {
+    try {
+        const data = queryString.parseUrl(url);
+        const paths = getUrlPaths(data.url);
+
+        if (paths.length !== 2 || paths[0] !== 'pool') {
+            return null;
+        }
+
+        const poolAddress = paths[1];
+        if (!poolAddress) {
+            return null;
+        }
+
+        return { poolAddress };
+    } catch (e) {
+        return null;
+    }
+}
+
+export function parseBuyTonDeeplink(url: string): true | null {
+    try {
+        const data = queryString.parseUrl(url);
+        const paths = getUrlPaths(data.url);
+
+        if (paths.length !== 1 || paths[0] !== 'buy-ton') {
+            return null;
+        }
+
+        return true;
+    } catch (e) {
+        return null;
+    }
+}
+
+export function parseBatteryDeeplink(url: string): true | null {
+    try {
+        const data = queryString.parseUrl(url);
+        const paths = getUrlPaths(data.url);
+
+        if (paths.length !== 1 || paths[0] !== 'battery') {
+            return null;
+        }
+
+        return true;
+    } catch (e) {
+        return null;
+    }
+}
+
+export function parseBrowserDeeplink(url: string): BrowserDeeplinkParams | null {
+    try {
+        const data = queryString.parseUrl(url);
+        const paths = getUrlPaths(data.url);
+
+        if (paths.length === 0 || paths[0] !== 'browser') {
+            return null;
+        }
+
+        return {};
+    } catch (e) {
+        return null;
+    }
+}
+
 export function parseTonTransferWithAddress(options: { url: string }) {
     try {
         const data = queryString.parseUrl(options.url);
 
-        const paths = data.url.split('/');
+        const paths = trimTrailingEmptyPathSegments(data.url.split('/'));
 
         let linkAddress: string;
         if (paths.length === 0) {
@@ -84,7 +203,7 @@ export async function parseTonTransaction(
         api: APIConfig;
         walletAddress: string;
         batteryResponse: string;
-        gaslessResponse: string;
+        gaslessResponse?: string;
     }
 ): Promise<
     | {
@@ -185,15 +304,25 @@ export async function parseTonTransaction(
                             { api, walletAddress }
                         )
                     },
-                    [TON_CONNECT_MSG_VARIANTS_ID.GASLESS]: {
-                        messages: await encodeJettonMessage(
-                            { to, value, payload, jetton, responseAddress: gaslessResponse },
-                            { api, walletAddress }
-                        ),
-                        options: {
-                            asset: jetton
-                        }
-                    }
+                    ...(gaslessResponse
+                        ? {
+                              [TON_CONNECT_MSG_VARIANTS_ID.GASLESS]: {
+                                  messages: await encodeJettonMessage(
+                                      {
+                                          to,
+                                          value,
+                                          payload,
+                                          jetton,
+                                          responseAddress: gaslessResponse
+                                      },
+                                      { api, walletAddress }
+                                  ),
+                                  options: {
+                                      asset: jetton
+                                  }
+                              }
+                          }
+                        : {})
                 }
             } satisfies TonConnectTransactionPayload;
             return {
@@ -335,8 +464,16 @@ const getUrlPaths = (url: string) => {
             sliced = sliced.slice(1);
         }
 
-        return sliced;
+        return trimTrailingEmptyPathSegments(sliced);
     }
 
-    return paths.slice(2);
+    return trimTrailingEmptyPathSegments(paths.slice(2));
+};
+
+const trimTrailingEmptyPathSegments = (paths: string[]) => {
+    const result = [...paths];
+    while (result.length > 0 && result[result.length - 1] === '') {
+        result.pop();
+    }
+    return result;
 };

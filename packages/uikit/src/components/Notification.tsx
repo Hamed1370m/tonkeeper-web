@@ -52,18 +52,20 @@ const NotificationContainer = styled(Container)<{ scrollbarWidth: number }>`
 
 const NotificationWrapper: FC<PropsWithChildren<{ entered: boolean; className?: string }>> = ({
     children,
-    entered,
-    className
+    className,
+    entered
 }) => {
     const sdk = useAppSdk();
 
+    // Re-measure scrollbar width after the transition completes (`entered` flips to true),
+    // because the scrollbar may appear/disappear as the modal opens.
     const scrollbarWidth = useMemo(() => {
         return window.innerWidth > notificationMaxWidth ? sdk.getScrollbarWidth() : 0;
-    }, [sdk, entered]);
+    }, [sdk, entered]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <NotificationContainer
-            className={'notification-container' + className ? ' ' + className : ''}
+            className={cn('notification-container', className)}
             id=""
             scrollbarWidth={scrollbarWidth}
         >
@@ -131,7 +133,7 @@ const OverlayWrapper = React.forwardRef<HTMLDivElement, PropsWithChildren<{ ente
 
         const scrollbarWidth = useMemo(() => {
             return sdk.getScrollbarWidth();
-        }, [sdk, entered]);
+        }, [sdk, entered]); // eslint-disable-line react-hooks/exhaustive-deps
 
         return (
             <Overlay
@@ -181,7 +183,7 @@ const Splash = styled.div`
     }
 `;
 
-const Content = styled.div<{ standalone: boolean; $isInWidget: boolean }>`
+const Content = styled.div<{ standalone: boolean }>`
     width: 100%;
     background-color: ${props => props.theme.backgroundPage};
     border-top-right-radius: ${props => props.theme.cornerMedium};
@@ -196,19 +198,11 @@ const Content = styled.div<{ standalone: boolean; $isInWidget: boolean }>`
             padding-bottom: 2rem;
         `}
 
-    ${props =>
-        props.$isInWidget &&
-        css`
-            padding-bottom: 46px;
-        `}
-
     ${p =>
         p.theme.displayType === 'full-width' &&
         css`
-            border-top-right-radius: ${props => props.theme.cornerSmall};
-            border-top-left-radius: ${props => props.theme.cornerSmall};
-            border-bottom-right-radius: ${p.theme.cornerSmall};
-            border-bottom-left-radius: ${p.theme.cornerSmall};
+            border-radius: ${props => props.theme.cornerSmall} ${props => props.theme.cornerSmall}
+                ${p.theme.cornerSmall} ${p.theme.cornerSmall};
             max-height: calc(100% - 32px);
             overflow: auto;
             padding-top: 0;
@@ -250,7 +244,6 @@ const FooterWrapper = styled.div<{ $keyboardShift?: number }>`
                 : css`
                       transform: translateY(0);
                   `}
-
             transition: transform ${iosKeyboardTransition};
 
             &:empty {
@@ -355,7 +348,6 @@ export const FullHeightBlock = styled(NotificationBlock)<{
         props.fitContent ? 'unset' : `calc(var(--app-height) - ${props.standalone ? 3 : 2}rem)`};
     padding-bottom: ${props => (props.noPadding ? 0 : 'calc(56px + 1rem)')};
     box-sizing: border-box;
-
     background-color: ${props => props.theme.backgroundPage};
 
     ${props =>
@@ -610,7 +602,7 @@ export const NotificationIonic: FC<{
                 );
             };
         }
-    }, [handleClose, onCloseInterceptor, isOpen]);
+    }, [onCloseInterceptor, isOpen]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -626,7 +618,7 @@ export const NotificationIonic: FC<{
             setTimeout(() => _afterClose && _afterClose(), 100);
             onClose();
         });
-    }, [isOpen, children, onClose]);
+    }, [children, onClose]);
 
     const HeightAnimation = useMemo(() => {
         if (disableHeightAnimation || mobileFullScreen) {
@@ -706,12 +698,11 @@ const IonicModalContentStyled = styled(IonContent)`
     &::part(scroll) {
         border-top-right-radius: ${props => props.theme.cornerMedium};
         border-top-left-radius: ${props => props.theme.cornerMedium};
-        padding: 0 1rem 0;
+        padding: 0 1rem;
         position: relative;
         display: flex;
         flex-direction: column;
         min-height: 100%;
-
         overscroll-behavior-y: none;
     }
 
@@ -791,7 +782,7 @@ export const NotificationDesktopAndWeb: FC<{
             setTimeout(() => _afterClose && _afterClose(), animationTime);
             onClose();
         });
-    }, [open, children, onClose]);
+    }, [children, onClose]);
 
     useEffect(() => {
         const handler = () => {
@@ -857,7 +848,6 @@ export const NotificationDesktopAndWeb: FC<{
     const containerRef = useClickOutside<HTMLDivElement>(onClickOutside, nodeRef.current);
     const [onBack, setOnBack] = useState<(() => void) | undefined>();
 
-    const isInWidget = useAppTargetEnv() === 'swap_widget_web';
     const isKeyboardOpen = useKeyboardHeight();
 
     return (
@@ -889,7 +879,6 @@ export const NotificationDesktopAndWeb: FC<{
                                     <Padding onClick={handleCloseOnlyOnNotFullWidth} />
                                     <GapAdjusted onClick={handleCloseOnlyOnNotFullWidth} />
                                     <Content
-                                        $isInWidget={isInWidget}
                                         standalone={standalone}
                                         ref={containerRef}
                                         className="dialog-content"
@@ -1059,7 +1048,7 @@ export const useSetNotificationOnBack = (onBack: undefined | (() => void)) => {
 
     useEffect(() => {
         return () => setOnBack(undefined);
-    }, []);
+    }, [setOnBack]);
 };
 
 export const useSetNotificationOnCloseInterceptor = (interceptor: OnCloseInterceptor) => {
@@ -1071,5 +1060,5 @@ export const useSetNotificationOnCloseInterceptor = (interceptor: OnCloseInterce
 
     useEffect(() => {
         return () => setOnCloseInterceptor(undefined);
-    }, []);
+    }, [setOnCloseInterceptor]);
 };

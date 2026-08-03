@@ -111,8 +111,6 @@ const Password = () => {
         case 'web':
         case 'twa':
             return <WebPassword />;
-        case 'swap_widget_web':
-            return null;
         default:
             assertUnreachable(env);
     }
@@ -131,7 +129,7 @@ const WebPassword = () => {
             }
         ];
         return i;
-    }, []);
+    }, [t]);
 
     return (
         <>
@@ -203,7 +201,7 @@ const DesktopAndTabletProPassword = () => {
         if (autoOpenSetPassword) {
             onOpen();
         }
-    }, [autoOpenSetPassword]);
+    }, [autoOpenSetPassword, onOpen]);
 
     const onResetPassword = async () => {
         await sdk.keychain?.securityCheck();
@@ -265,7 +263,7 @@ const ShowPhrases = () => {
             }
         ];
         return i;
-    }, []);
+    }, [navigate, t]);
 
     if (isLedger || isKeystone || isReadOnly) {
         return <></>;

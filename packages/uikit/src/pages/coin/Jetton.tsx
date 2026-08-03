@@ -1,8 +1,5 @@
 import { Address } from '@ton/core';
-import {
-    jettonToTonAssetAmount,
-    tonAssetAddressToString
-} from '@tonkeeper/core/dist/entries/crypto/asset/ton-asset';
+import { jettonToTonAssetAmount } from '@tonkeeper/core/dist/entries/crypto/asset/ton-asset';
 import { JettonBalance, JettonInfo } from '@tonkeeper/core/dist/tonApiV2';
 import React, { FC, Suspense, useMemo, useRef } from 'react';
 import { InnerBody } from '../../components/Body';
@@ -18,12 +15,11 @@ import { ReceiveAction } from '../../components/home/ReceiveAction';
 import { SwapAction } from '../../components/home/SwapAction';
 import { CoinInfo } from '../../components/jettons/Info';
 import { SendAction } from '../../components/transfer/SendActionButton';
-import { useAppContext } from '../../hooks/appContext';
 import { useFormatBalance } from '../../hooks/balance';
 import { useFetchNext } from '../../hooks/useFetchNext';
 import { useJettonBalance, useJettonInfo } from '../../state/jetton';
 import { useFormatFiat, useRate } from '../../state/rates';
-import { useAllSwapAssets } from '../../state/swap/useSwapAssets';
+import { useSwapAssetSearch } from '../../state/swap/useSwapAssets';
 import { useIsActiveWalletWatchOnly } from '../../state/wallet';
 import { useFetchFilteredActivity, useScrollMonitor } from '../../state/activity';
 import EmptyActivity from '../../components/activity/EmptyActivity';
@@ -37,8 +33,6 @@ export const MobileAssetHistory: FC<{
     assetAddress: string;
     innerRef: React.RefObject<HTMLDivElement>;
 }> = ({ assetAddress, innerRef }) => {
-    const { standalone } = useAppContext();
-
     const {
         refetch,
         isFetched: isActivityFetched,
@@ -52,12 +46,10 @@ export const MobileAssetHistory: FC<{
 
     const isFetchingNextPage = isActivityFetchingNextPage;
 
-    useFetchNext(
+    const setSentinelRef = useFetchNext(
         hasActivityNextPage,
         isFetchingNextPage,
-        fetchActivityNextPage,
-        standalone,
-        innerRef
+        fetchActivityNextPage
     );
 
     if (!isActivityFetched || !activity) {
@@ -76,6 +68,7 @@ export const MobileAssetHistory: FC<{
         <>
             <MobileActivityList items={activity} />
             {isFetchingNextPage && <SkeletonListWithImages size={3} />}
+            <div ref={setSentinelRef} />
         </>
     );
 };
@@ -86,7 +79,7 @@ const JettonHeader: FC<{ info: JettonInfo; balance: JettonBalance }> = ({ info, 
             jettonToTonAssetAmount(balance).relativeAmount.toNumber(),
             Address.parse(balance.jetton.address).toString()
         ],
-        [info, balance]
+        [balance]
     );
 
     const { data } = useRate(address);
@@ -111,15 +104,12 @@ export const JettonContent: FC<{ jettonAddress: string }> = ({ jettonAddress }) 
     const { data: info } = useJettonInfo(jettonAddress);
     const { data: balance } = useJettonBalance(jettonAddress);
     const isReadOnly = useIsActiveWalletWatchOnly();
-    const { data: swapAssets } = useAllSwapAssets();
 
     const address = Address.parse(jettonAddress);
     const jettonAddressRaw = address.toRawString();
-    const swapAsset = isReadOnly
-        ? undefined
-        : swapAssets?.find(a => tonAssetAddressToString(a.address) === jettonAddressRaw);
+    const swapAsset = useSwapAssetSearch(isReadOnly ? undefined : jettonAddressRaw);
     const ref = useRef<HTMLDivElement>(null);
-    if (!info || !balance || !swapAssets) {
+    if (!info || !balance || swapAsset === undefined) {
         return <CoinSkeletonPage />;
     }
 

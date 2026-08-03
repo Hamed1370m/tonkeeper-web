@@ -9,6 +9,7 @@ import {
     getServerConfig,
     BootParams
 } from '@tonkeeper/core/dist/tonkeeperApi/tonendpoint';
+import { setAppVersionHeaders } from '@tonkeeper/core/dist/utils/appVersion';
 import { useMemo } from 'react';
 import { useAppContext } from '../hooks/appContext';
 import { QueryKey, TonkeeperApiKey } from '../libs/queryKey';
@@ -32,6 +33,10 @@ export const useTonendpoint = ({
     storeCountryCode?: string | null;
 }) => {
     return useMemo(() => {
+        // Seed the X-App-* headers used by the header-based backends (Battery,
+        // Pro). The header platform is always 'web'; the per-app platform is
+        // carried by the query-param backends (boot/api/swap) instead.
+        setAppVersionHeaders({ version: build });
         return new Tonendpoint({
             build,
             network,
@@ -77,7 +82,7 @@ export const useTonendpointBuyMethods = () => {
             const layout = methods.layoutByCountry.find(item => item.countryCode === countryCode);
 
             const buildMethods = (acc: TonendpoinFiatItem[], id: string) => {
-                const method = buy.items.find(item => item.id === id);
+                const method = buy.items?.find(item => item.id === id);
                 if (method) {
                     acc.push(method);
                 }
@@ -135,7 +140,8 @@ export enum FLAGGED_FEATURE {
     DAPPS_LIST = 'dapps_list',
     ETHENA = 'ethena',
     NFT = 'nft',
-    CRYPTO_SUBSCRIPTION = 'crypto_subscription'
+    CRYPTO_SUBSCRIPTION = 'crypto_subscription',
+    STAKING = 'staking'
 }
 const flagsMapping: Record<FLAGGED_FEATURE, keyof TonendpointConfig['flags']> = {
     battery: 'disable_battery',
@@ -147,7 +153,8 @@ const flagsMapping: Record<FLAGGED_FEATURE, keyof TonendpointConfig['flags']> = 
     dapps_list: 'disable_dapps',
     ethena: 'disable_usde',
     nft: 'disable_nfts',
-    crypto_subscription: 'disable_crypto_subscription'
+    crypto_subscription: 'disable_crypto_subscription',
+    staking: 'disable_staking'
 };
 
 export function useIsFeatureEnabled(feature: FLAGGED_FEATURE) {

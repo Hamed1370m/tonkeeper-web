@@ -1,15 +1,17 @@
 import { styled } from 'styled-components';
 import { Body3, Num2 } from '../Text';
 import { SwapTokenSelect } from './SwapTokenSelect';
-import { useSelectedSwap, useSwapToAsset } from '../../state/swap/useSwapForm';
+import { useSwapToAsset } from '../../state/swap/useSwapForm';
 import { SwapAmountFiat } from './SwapAmountFiat';
 import { SwapToAmountBalance } from './SwapAmountBalance';
-import { useCalculatedSwap } from '../../state/swap/useCalculatedSwap';
+import { useSwapConfirmation } from '../../state/swap/useSwapStreamEffect';
 import { Skeleton } from '../shared/Skeleton';
 import { SwapTransactionInfo } from './SwapTransactionInfo';
 import { SwapRate } from './SwapRate';
 import { useTranslation } from '../../hooks/translation';
 import { FC } from 'react';
+import BigNumber from 'bignumber.js';
+import { shiftedDecimals } from '@tonkeeper/core/dist/utils/balance';
 
 const FiledContainerStyled = styled.div`
     background: ${p => p.theme.backgroundContent};
@@ -26,7 +28,6 @@ const FiledHeader = styled.div`
     color: ${p => p.theme.textSecondary};
     gap: 8px;
     display: flex;
-
     padding: 4px 0;
 
     > *:first-child {
@@ -47,7 +48,6 @@ const FieldBody = styled.div`
 const ToAmountField = styled.div`
     margin-left: auto;
     overflow: auto;
-
     cursor: default;
 
     &::-webkit-scrollbar {
@@ -81,9 +81,11 @@ const Num2Tertiary = styled(Num2)`
 export const SwapToField: FC<{ separateInfo?: boolean }> = ({ separateInfo }) => {
     const { t } = useTranslation();
     const [toAsset, setToAsset] = useSwapToAsset();
-    const { isFetching } = useCalculatedSwap();
+    const { confirmation, isFetching } = useSwapConfirmation();
 
-    const [selectedSwap] = useSelectedSwap();
+    const toRelativeAmount = confirmation
+        ? shiftedDecimals(new BigNumber(confirmation.askUnits), toAsset.decimals)
+        : undefined;
 
     return (
         <>
@@ -95,10 +97,12 @@ export const SwapToField: FC<{ separateInfo?: boolean }> = ({ separateInfo }) =>
                 <FieldBody>
                     <SwapTokenSelectStyled token={toAsset} onTokenChange={setToAsset} />
                     <ToAmountField>
-                        {!selectedSwap?.trade && isFetching ? (
+                        {!confirmation && isFetching ? (
                             <Skeleton width="100px" height="28px" margin="4px 0" />
-                        ) : selectedSwap?.trade ? (
-                            <Num2>{selectedSwap.trade.to.stringRelativeAmount}</Num2>
+                        ) : toRelativeAmount ? (
+                            <Num2>
+                                {toRelativeAmount.decimalPlaces(toAsset.decimals).toString()}
+                            </Num2>
                         ) : (
                             <Num2Tertiary>0</Num2Tertiary>
                         )}
@@ -106,10 +110,7 @@ export const SwapToField: FC<{ separateInfo?: boolean }> = ({ separateInfo }) =>
                 </FieldBody>
                 <FieldFooter>
                     <SwapRate />
-                    <SwapAmountFiat
-                        amount={selectedSwap?.trade?.to.relativeAmount}
-                        asset={toAsset}
-                    />
+                    <SwapAmountFiat amount={toRelativeAmount} asset={toAsset} />
                 </FieldFooter>
                 {!separateInfo && <SwapTransactionInfo />}
             </FiledContainerStyled>

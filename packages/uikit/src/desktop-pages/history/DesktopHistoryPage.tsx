@@ -1,4 +1,4 @@
-import { FC, Suspense, useCallback } from 'react';
+import { FC, Suspense } from 'react';
 import styled, { css } from 'styled-components';
 import { ActivitySkeletonPage } from '../../components/Skeleton';
 import { useFetchNext } from '../../hooks/useFetchNext';
@@ -30,7 +30,7 @@ import { ForTargetEnv, NotForTargetEnv } from '../../components/shared/TargetEnv
 import { PullToRefresh } from '../../components/mobile-pro/PullToRefresh';
 import { QueryKey } from '../../libs/queryKey';
 import { Button } from '../../components/fields/Button';
-import { ErrorBoundary } from "../../components/shared/ErrorBoundary";
+import { ErrorBoundary } from '../../components/shared/ErrorBoundary';
 
 const HistoryPageWrapper = styled(DesktopViewPageLayout)`
     ${p =>
@@ -47,8 +47,7 @@ const HistoryContainer = styled.div`
     ${p =>
         p.theme.proDisplayType === 'desktop' &&
         css`
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: auto hidden;
         `}
 `;
 
@@ -60,9 +59,9 @@ const ExplorerButton = styled.button`
     align-items: center;
     justify-content: center;
     cursor: pointer;
-
     color: ${p => p.theme.iconTertiary};
     transition: color 0.15s ease-in-out;
+
     &:hover {
         color: ${p => p.theme.textAccent};
     }
@@ -149,17 +148,11 @@ const DesktopHistoryPageContent: FC = () => {
 
     const isFetchingNextPage = isActivityFetchingNextPage;
 
-    const setFetchNextRef = useFetchNext(
+    const setSentinelRef = useFetchNext(
         hasActivityNextPage,
         isFetchingNextPage,
-        fetchActivityNextPage,
-        true
+        fetchActivityNextPage
     );
-
-    const refCallback = useCallback((el: HTMLDivElement) => {
-        setFetchNextRef(el);
-        setMonitorRef(el);
-    }, []);
 
     const {
         asset: assetFilter,
@@ -262,13 +255,14 @@ const DesktopHistoryPageContent: FC = () => {
     }
 
     return (
-        <HistoryPageWrapper ref={refCallback}>
+        <HistoryPageWrapper ref={setMonitorRef}>
             <DesktopViewHeader borderBottom={true}>
                 <DesktopViewHeaderContent title={t('page_header_history')} right={rightPart} />
             </DesktopViewHeader>
             <PullToRefresh invalidate={QueryKey.activity} />
             <HistoryContainer>
                 <DesktopHistory activity={activity} isFetchingNextPage={isFetchingNextPage} />
+                <div ref={setSentinelRef} />
             </HistoryContainer>
         </HistoryPageWrapper>
     );

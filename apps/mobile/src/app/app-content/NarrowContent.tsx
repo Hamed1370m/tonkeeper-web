@@ -10,8 +10,10 @@ import {
     AppRoute,
     DevSettingsRoute,
     SettingsRoute,
+    StakingRoute,
     WalletSettingsRoute
 } from '@tonkeeper/uikit/dist/libs/routes';
+import DesktopBrowser from '@tonkeeper/uikit/dist/desktop-pages/browser';
 import { DesktopMultiSendPage } from '@tonkeeper/uikit/dist/desktop-pages/multi-send';
 import DesktopAccountSettingsPage from '@tonkeeper/uikit/dist/desktop-pages/settings/DesktopAccountSettingsPage';
 import { DesktopCollectables } from '@tonkeeper/uikit/dist/desktop-pages/nft/DesktopCollectables';
@@ -75,6 +77,12 @@ import { Button } from '@tonkeeper/uikit';
 import { MobileDappBrowserController } from '../components/dapp-browser/MobileDappBrowserController';
 import { ProSubscriptionSettings } from '@tonkeeper/uikit/dist/components/settings/ProSubscriptionSettings';
 import { routerLocation$ } from '@tonkeeper/uikit/dist/hooks/router/useLocation';
+import {
+    DesktopStakingDefaultIonRoute,
+    DesktopStakingFormIonRoute,
+    DesktopStakingPoolDetailIonRoute,
+    DesktopStakingUnstakeIonRoute
+} from '@tonkeeper/uikit/dist/desktop-pages/staking';
 
 const WideLayout = styled.div`
     width: 100%;
@@ -92,7 +100,6 @@ const WalletLayout = styled.div<{ $gradient: boolean }>`
     display: flex;
     flex-direction: column;
     height: 100%;
-
     position: relative;
 `;
 
@@ -176,7 +183,7 @@ const NarrowContentInitialPagesLock = () => {
                     setTimeout(() => setFaceIdValidation(undefined), 200);
                 });
         }
-    }, [biometry]);
+    }, [biometry, sdk.keychain, sdk.uiEvents]);
 
     const { mutateAsync: mutateLogOut } = useMutateDeleteAll();
     const accounts = useAccountsState();
@@ -270,6 +277,7 @@ const NarrowContentAppRouting = () => {
                             />
 
                             <Route path={AppRoute.activity} component={DesktopHistoryPage} />
+                            <Route path={AppRoute.browser} component={DesktopBrowser} />
                             <Route path={AppRoute.purchases} component={DesktopCollectables} />
                             <Route path={AppRoute.dns} component={DesktopDns} />
                             <Route
@@ -283,6 +291,23 @@ const NarrowContentAppRouting = () => {
                             <Route path={AppRoute.swap} component={DesktopSwapPage} />
                             <Route path={AppRoute.home} exact component={MobileProHomePage} />
                             <Route path={AppRoute.coins} exact component={DesktopTokens} />
+                            <Route
+                                path={`${AppRoute.staking}${StakingRoute.pool}/:address`}
+                                component={DesktopStakingPoolDetailIonRoute}
+                            />
+                            <Route
+                                path={`${AppRoute.staking}${StakingRoute.stake}/:address?`}
+                                component={DesktopStakingFormIonRoute}
+                            />
+                            <Route
+                                path={`${AppRoute.staking}${StakingRoute.unstake}/:address`}
+                                component={DesktopStakingUnstakeIonRoute}
+                            />
+                            <Route
+                                path={AppRoute.staking}
+                                exact
+                                component={DesktopStakingDefaultIonRoute}
+                            />
                             <Route path={`${AppRoute.coins}/:name`} component={DesktopCoinPage} />
 
                             {/* Wallet settings */}

@@ -61,9 +61,6 @@ export enum QueryKey {
     dashboardData = 'dashboardData',
 
     stonfiAssets = 'stonfiAssets',
-    swapCalculate = 'swapCalculate',
-    swapGasConfig = 'swapCalculate',
-    swapMaxValue = 'swapMaxValue',
     swapAllAssets = 'swapAllAssets',
     swapWalletAssets = 'swapWalletAssets',
     swapCustomToken = 'swapCustomToken',
@@ -91,7 +88,9 @@ export enum QueryKey {
     trc20TrxDefaultFee = 'trc20TrxDefaultFee',
     trc20FreeTransfersConfig = 'trc20FreeTransfersConfig',
 
-    legacyPlugins = 'legacyPlugins'
+    legacyPlugins = 'legacyPlugins',
+
+    staking = 'staking'
 }
 
 export enum JettonKey {

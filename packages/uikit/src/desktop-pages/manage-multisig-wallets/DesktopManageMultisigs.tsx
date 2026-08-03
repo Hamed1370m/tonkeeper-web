@@ -175,13 +175,7 @@ export const ManageExistingMultisigWallets: FC<{ multisigs: MultisigInfo[] }> = 
                 hostWallets: m.signers.filter(s => allWallets.includes(s))
             };
         });
-    }, [
-        accounts,
-        multisigs,
-        selectedHostWalletId,
-        currentActiveAccount.name,
-        currentActiveAccount.emoji
-    ]);
+    }, [accounts, multisigs, selectedHostWalletId]);
 
     const onRename = async (item: {
         address: string;
@@ -274,9 +268,8 @@ const EmptyMultisigsPageContent = styled.div`
     padding: 0 16px;
     text-align: center;
     display: flex;
-    flex-direction: column;
+    flex-flow: column wrap;
     align-items: center;
-    flex-wrap: wrap;
     justify-content: center;
 
     > ${Label2} {

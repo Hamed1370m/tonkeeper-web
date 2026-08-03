@@ -6,15 +6,15 @@ import { AccountConnection } from '@tonkeeper/core/dist/service/tonConnect/conne
 import { TonConnectAppRequestPayload } from '@tonkeeper/core/dist/entries/tonConnect';
 import { App } from '@capacitor/app';
 import { isSignerLink } from '@tonkeeper/uikit/dist/state/signer';
-import { atom, subject } from '@tonkeeper/core/dist/entries/atom';
+import { atom, replaySubject } from '@tonkeeper/core/dist/entries/atom';
 import { capacitorStorage } from '../appSdk';
 import packageJson from '../../../package.json';
 
-const tonConnectDisconnect$ = subject<AccountConnection>();
-const tonConnectRequest$ = subject<TonConnectAppRequestPayload>();
-const signerResponse$ = subject<{
+const tonConnectDisconnect$ = replaySubject<AccountConnection>('all');
+const tonConnectRequest$ = replaySubject<TonConnectAppRequestPayload>('all');
+const signerResponse$ = replaySubject<{
     signatureHex: string;
-}>();
+}>('all');
 
 export const tonConnectSSE = new TonConnectSSE({
     storage: capacitorStorage,
@@ -24,7 +24,8 @@ export const tonConnectSSE = new TonConnectSSE({
     },
     bridgeEndpointFetcher: createBridgeEndpointFetcher({
         platform: 'pro_mobile_ios',
-        build: packageJson.version,
+        // Temporary: match appSdk — strip semver pre-release suffix from `build`.
+        build: packageJson.version.replace(/[-+].*$/, ''),
         onError: e => console.error(e)
     })
 });

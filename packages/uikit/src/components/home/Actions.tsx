@@ -1,7 +1,6 @@
 import React, { FC, useContext, useLayoutEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { AppSelectionContext, useAppContext } from '../../hooks/appContext';
-import { useAppSdk } from '../../hooks/appSdk';
 import { useTranslation } from '../../hooks/translation';
 import { Label3 } from '../Text';
 import { useAnalyticsTrack } from '../../hooks/analytics';
@@ -40,7 +39,6 @@ const Block = styled.div<{
     gap: 0.5rem;
     width: 65px;
     text-align: center;
-
     user-select: none;
 
     ${props => {
@@ -91,7 +89,6 @@ export const Action: FC<ActionProps> = ({ icon, title, disabled, action }) => {
     const track = useAnalyticsTrack();
     const { t } = useTranslation();
     const selection = useContext(AppSelectionContext);
-    const sdk = useAppSdk();
     const { ios } = useAppContext();
     const [isHover, setHover] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -102,14 +99,11 @@ export const Action: FC<ActionProps> = ({ icon, title, disabled, action }) => {
         } else {
             setHover(false);
         }
-    }, [ref.current, selection, setHover]);
+    }, [selection, setHover]);
 
     const onClick = () => {
         if (disabled) return;
 
-        if (sdk.twaExpand) {
-            sdk.twaExpand();
-        }
         track('Action', { kind: title });
         action();
     };

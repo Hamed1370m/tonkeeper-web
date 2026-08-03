@@ -24,10 +24,8 @@ const Block = styled.form<{ minHeight?: string }>`
     display: flex;
     flex-direction: column;
     min-height: var(--app-height);
-
     padding: 2rem 1rem;
     box-sizing: border-box;
-
     justify-content: center;
     gap: 12px;
 `;
@@ -105,7 +103,7 @@ const PasswordUnlock: FC<{ logOutConfirmed?: () => void }> = ({ logOutConfirmed 
         if (ref.current) {
             ref.current.focus();
         }
-    }, [ref.current]);
+    }, []);
 
     const onChange = (value: string) => {
         reset();
@@ -139,7 +137,7 @@ const PasswordUnlock: FC<{ logOutConfirmed?: () => void }> = ({ logOutConfirmed 
         if (sdk.keychain?.security.value?.biometry) {
             sdk.keychain.securityCheck('biometry').then(() => sdk.uiEvents.emit('unlock'));
         }
-    }, []);
+    }, [sdk.keychain, sdk.uiEvents]);
 
     const contentRef = useRef<HTMLFormElement>(null);
     useInputFocusScroll(contentRef);
@@ -197,7 +195,7 @@ export const Unlock = () => {
             mutate(false);
             sdk.uiEvents.emit('unlock');
         }
-    }, [isPasswordSet, keychainPassword, mutate]);
+    }, [isPasswordSet, keychainPassword, mutate, sdk.uiEvents]);
 
     if (isPasswordSet || keychainPassword) {
         return <PasswordUnlock logOutConfirmed={() => (canUnlock.current = false)} />;

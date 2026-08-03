@@ -315,44 +315,24 @@ const StyledSpinner = styled.svg`
             transform: rotate(360deg);
         }
     }
+
     @keyframes dash {
         0% {
             stroke-dasharray: 1, 150;
             stroke-dashoffset: 0;
         }
+
         50% {
             stroke-dasharray: 90, 150;
             stroke-dashoffset: -35;
         }
+
         100% {
             stroke-dasharray: 90, 150;
             stroke-dashoffset: -124;
         }
     }
 `;
-
-export const ToncoinIcon: FC<{ width?: string; height?: string }> = ({
-    width = '44',
-    height = '44'
-}) => {
-    return (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={width}
-            height={height}
-            viewBox="0 0 44 44"
-            fill="none"
-        >
-            <rect width="44" height="44" rx="22" fill="#0088CC" />
-            <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M23.1557 31.4672L30.0161 19.9928C30.7071 18.8369 31.0526 18.259 31.1463 17.7999C31.4212 16.4532 30.6595 15.1104 29.3626 14.6552C28.9205 14.5 28.2471 14.5 26.9005 14.5H17.0997C15.7531 14.5 15.0797 14.5 14.6376 14.6552C13.3407 15.1104 12.579 16.4532 12.8539 17.7999C12.9476 18.259 13.2931 18.8369 13.9841 19.9928L20.8445 31.4672C21.0894 31.8768 21.2119 32.0816 21.3417 32.1913C21.7218 32.5126 22.2784 32.5126 22.6585 32.1913C22.7884 32.0816 22.9108 31.8768 23.1557 31.4672ZM21.0001 16.5V27.9L15.1768 17.9916C14.9921 17.6774 14.8997 17.5202 14.875 17.3953C14.8027 17.029 15.0108 16.6653 15.3633 16.542C15.4835 16.5 15.6658 16.5 16.0303 16.5H21.0001ZM23.0001 27.9V16.5H27.9699C28.3345 16.5 28.5167 16.5 28.6369 16.542C28.9894 16.6653 29.1975 17.029 29.1252 17.3953C29.1005 17.5202 29.0081 17.6774 28.8235 17.9916L23.0001 27.9Z"
-                fill="white"
-            />
-        </svg>
-    );
-};
 
 export const CheckboxIcon = () => {
     return (
@@ -1206,6 +1186,27 @@ export const SwapIcon: FC<{ className?: string; color?: string }> = ({ className
     );
 };
 
+export const StakingIcon: FC<{ className?: string; color?: string }> = ({ className, color }) => {
+    const theme = useTheme();
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            color={theme[color || 'iconSecondary']}
+            className={className}
+        >
+            <path
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M10 13.7501V4.06066L7.78027 6.28039C7.48738 6.57328 7.01262 6.57328 6.71973 6.28039C6.42683 5.9875 6.42683 5.51274 6.71973 5.21984L10.2197 1.71984L10.2764 1.66809C10.571 1.42778 11.0057 1.44524 11.2803 1.71984L14.7803 5.21984C15.0732 5.51274 15.0732 5.9875 14.7803 6.28039C14.4874 6.57328 14.0126 6.57328 13.7197 6.28039L11.5 4.06066V13.7501C11.5 14.1643 11.1642 14.5001 10.75 14.5001C10.3358 14.5001 10 14.1643 10 13.7501ZM1 13.7501V10.7501C1 10.3359 1.33579 10.0001 1.75 10.0001C2.16421 10.0001 2.5 10.3359 2.5 10.7501V13.7501C2.5 14.1643 2.16421 14.5001 1.75 14.5001C1.33579 14.5001 1 14.1643 1 13.7501ZM5.5 8.75012V13.7501C5.5 14.1643 5.83579 14.5001 6.25 14.5001C6.66421 14.5001 7 14.1643 7 13.7501V8.75012C7 8.3359 6.66421 8.00012 6.25 8.00012C5.83579 8.00012 5.5 8.3359 5.5 8.75012Z"
+                fill="currentColor"
+            />
+        </svg>
+    );
+};
+
 export const GlobeIcon: FC<{ className?: string }> = ({ className }) => {
     const theme = useTheme();
     return (
@@ -1437,7 +1438,6 @@ const SpinnerRingContainer = styled.div<{ color?: string }>`
         position: absolute;
         left: 0;
         top: 0;
-
         animation: rotate 1s linear infinite;
     }
 `;

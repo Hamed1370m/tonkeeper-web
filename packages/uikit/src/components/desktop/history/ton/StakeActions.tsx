@@ -1,4 +1,5 @@
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import { Action } from '@tonkeeper/core/dist/tonApiV2';
 import { useTranslation } from '../../../../hooks/translation';
 import {
@@ -10,7 +11,6 @@ import {
     HistoryCellComment
 } from './HistoryCell';
 import { CoinsIcon, DoneIcon, ExitIcon } from '../../../Icon';
-import { CryptoCurrency } from '@tonkeeper/core/dist/entries/crypto';
 import styled from 'styled-components';
 import { HistoryGridCell } from './HistoryGrid';
 
@@ -36,7 +36,7 @@ export const DepositStakeDesktopAction: FC<{
                 <HistoryCellComment />
                 <HistoryCellAmount
                     amount={depositStake.amount}
-                    symbol={CryptoCurrency.TON}
+                    symbol={BRAND_CONFIG.coinSymbolWithEx}
                     decimals={9}
                     isFailed={isFailed}
                     isNegative
@@ -68,7 +68,7 @@ export const WithdrawStakeDesktopAction: FC<{
                 <HistoryCellComment />
                 <HistoryCellAmount
                     amount={withdrawStake.amount}
-                    symbol={CryptoCurrency.TON}
+                    symbol={BRAND_CONFIG.coinSymbolWithEx}
                     decimals={9}
                     isFailed={action.status === 'failed'}
                 />
@@ -92,6 +92,29 @@ export const WithdrawRequestStakeDesktopAction: FC<{
     }
 
     const isFailed = action.status === 'failed';
+    const stakeMeta = withdrawStakeRequest.stakeMeta;
+
+    let amountNode: ReactNode = <HistoryGridCell className="grid-area-amount" />;
+    if (stakeMeta) {
+        amountNode = (
+            <HistoryCellAmount
+                amount={stakeMeta.value}
+                symbol={stakeMeta.tokenName}
+                decimals={stakeMeta.decimals}
+                isFailed={isFailed}
+                isNegative
+            />
+        );
+    } else if (withdrawStakeRequest.amount) {
+        amountNode = (
+            <HistoryCellAmount
+                amount={withdrawStakeRequest.amount}
+                symbol={BRAND_CONFIG.coinSymbolWithEx}
+                decimals={9}
+                isFailed={isFailed}
+            />
+        );
+    }
 
     return (
         <>
@@ -101,16 +124,7 @@ export const WithdrawRequestStakeDesktopAction: FC<{
             <HistoryCellAccount account={withdrawStakeRequest.pool} />
             <ActionRow>
                 <HistoryCellComment />
-                {withdrawStakeRequest.amount ? (
-                    <HistoryCellAmount
-                        amount={withdrawStakeRequest.amount}
-                        symbol={CryptoCurrency.TON}
-                        decimals={9}
-                        isFailed={action.status === 'failed'}
-                    />
-                ) : (
-                    <HistoryGridCell className="grid-area-amount" />
-                )}
+                {amountNode}
             </ActionRow>
         </>
     );

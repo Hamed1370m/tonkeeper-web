@@ -52,10 +52,8 @@ const HeadingBlock = styled(Block)`
 
 const Body = styled(Body1)`
     user-select: none;
-
     text-align: center;
     color: ${props => props.theme.textSecondary};
-
     ${p =>
         p.theme.displayType === 'full-width' &&
         css`
@@ -64,7 +62,6 @@ const Body = styled(Body1)`
             display: block;
             margin: 0 auto;
         `}
-
     text-wrap: balance;
 `;
 
@@ -75,7 +72,6 @@ export const WorldsGrid = styled.div<{ wordsNumber: 12 | 24 }>`
     gap: 0.5rem;
     place-content: space-evenly;
     margin: 1rem 0;
-
     white-space: normal;
 `;
 
@@ -84,7 +80,6 @@ export const WorldNumber = styled(Body2)`
     width: 24px;
     line-height: 24px;
     color: ${props => props.theme.textSecondary};
-
     user-select: none;
 `;
 
@@ -92,9 +87,7 @@ const Number1 = styled(Body1)`
     display: inline-block;
     width: 26px;
     text-align: right;
-
     font-size: 15px;
-
     color: ${props => props.theme.textSecondary};
 `;
 
@@ -246,14 +239,7 @@ export const Words: FC<{
     onCheck: () => void;
     showMamInfo?: boolean;
 }> = ({ mnemonic, onCheck, showMamInfo }) => {
-    const sdk = useAppSdk();
     const { t } = useTranslation();
-
-    useEffect(() => {
-        if (sdk.twaExpand) {
-            sdk.twaExpand();
-        }
-    }, []);
 
     return (
         <CenterContainer>
@@ -277,7 +263,6 @@ const Input = styled.input`
     flex-grow: 1;
     font-weight: 500;
     font-size: 16px;
-
     color: ${props => props.theme.textPrimary};
 `;
 
@@ -450,7 +435,7 @@ export const Check: FC<{
             .replace('%1%', formatOrdinals(i18n.language, test1))
             .replace('%2%', formatOrdinals(i18n.language, test2))
             .replace('%3%', formatOrdinals(i18n.language, test3));
-    }, [t, test1, test2, test3]);
+    }, [t, test1, test2, test3, i18n.language]);
 
     const isValid = useMemo(
         () => words.every((val, i) => val.toLowerCase().trim() === mnemonic[positions[i] - 1]),
@@ -478,7 +463,7 @@ export const Check: FC<{
         window.addEventListener('keydown', handler);
 
         return () => window.removeEventListener('keydown', handler);
-    }, [words]);
+    }, [words, isValid]);
 
     const handleChange = (changeValue: string, wordIndex: number) =>
         setWords(prevWordsState =>
@@ -533,7 +518,7 @@ const Inputs = styled.div<{ wordsNumber: 12 | 24 }>`
     grid-auto-flow: column;
     gap: 0.5rem;
 
-    @media (max-width: 768px) {
+    @media (width <= 768px) {
         grid-template-rows: repeat(${p => p.wordsNumber}, minmax(0, 1fr));
     }
 
@@ -582,42 +567,39 @@ export const ImportWords: FC<{
 
     useEffect(() => {
         onIsDirtyChange?.(isDirty);
-    }, [isDirty]);
+    }, [isDirty, onIsDirtyChange]);
 
-    const onChange = useCallback(
-        (newValue: string, index: number) => {
-            if (newValue.includes(' ') || newValue.includes(String.fromCharCode(160))) {
-                let values = newValue
-                    .trim()
-                    .replace(/\xA0/g, ' ') // replace char 160
-                    .replace(/[0-9]/g, '') // remove numbers
-                    .replace(/\./g, '') // remove dots
-                    .replace(/\s+/g, ' ') // remove double spaces
-                    .split(' ');
+    const onChange = useCallback((newValue: string, index: number) => {
+        if (newValue.includes(' ') || newValue.includes(String.fromCharCode(160))) {
+            let values = newValue
+                .trim()
+                .replace(/\xA0/g, ' ') // replace char 160
+                .replace(/[0-9]/g, '') // remove numbers
+                .replace(/\./g, '') // remove dots
+                .replace(/\s+/g, ' ') // remove double spaces
+                .split(' ');
 
-                if (!values[0]) return;
+            if (!values[0]) return;
 
-                if (values.length === 1) {
-                    setMnemonic(items => items.map((v, i) => (i === index ? values[0] : v)));
-                    focusInput(ref.current, index + 1);
-                } else {
-                    const max = Math.min(24 - index, values.length);
-                    values = values.slice(0, max);
-                    setMnemonic(items => {
-                        items = [...items];
-                        items.splice(index, max, ...values);
-                        return items;
-                    });
-                    focusInput(ref.current, max - 1);
-                }
-
-                return;
+            if (values.length === 1) {
+                setMnemonic(items => items.map((v, i) => (i === index ? values[0] : v)));
+                focusInput(ref.current, index + 1);
             } else {
-                return setMnemonic(items => items.map((v, i) => (i === index ? newValue : v)));
+                const max = Math.min(24 - index, values.length);
+                values = values.slice(0, max);
+                setMnemonic(items => {
+                    items = [...items];
+                    items.splice(index, max, ...values);
+                    return items;
+                });
+                focusInput(ref.current, max - 1);
             }
-        },
-        [ref.current]
-    );
+
+            return;
+        } else {
+            return setMnemonic(items => items.map((v, i) => (i === index ? newValue : v)));
+        }
+    }, []);
 
     const validations = useMemo(() => {
         return mnemonic.map(item => item === '' || wordlist.includes(item));

@@ -20,7 +20,6 @@ const Block = styled.form`
 const Body = styled(Body1)`
     user-select: none;
     margin-bottom: 1rem;
-
     text-align: center;
     color: ${props => props.theme.textSecondary};
 
@@ -43,7 +42,7 @@ export const UpdateWalletName: FC<{
         if (ref.current) {
             ref.current.focus();
         }
-    }, [ref.current]);
+    }, []);
 
     const [name, setName] = useState(nameProp || '');
     const [emoji, setEmoji] = useState(walletEmoji);

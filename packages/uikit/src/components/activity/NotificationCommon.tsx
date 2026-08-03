@@ -1,4 +1,5 @@
 import { intlLocale } from '@tonkeeper/core/dist/entries/language';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import { AccountAddress, AccountEvent } from '@tonkeeper/core/dist/tonApiV2';
 import { formatAddress, toShortValue } from '@tonkeeper/core/dist/utils/common';
 import React, { FC, PropsWithChildren, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { useFormatFiat, useRate } from '../../state/rates';
 import { ChevronRightIcon, SpinnerIcon, TonkeeperProCardIcon } from '../Icon';
 import { ColumnText } from '../Layout';
 import { ListItem, ListItemPayload } from '../List';
-import { Body1, Body2Class, Body3, Body3Class, H2, Label1, Label2 } from '../Text';
+import { Body1, Body2, Body2Class, Body3, Body3Class, H2, Label1, Label2 } from '../Text';
 import { Button, ButtonFlat } from '../fields/Button';
 import { hexToRGBA } from '../../libs/css';
 import { useActiveConfig, useActiveTonNetwork } from '../../state/wallet';
@@ -83,7 +84,6 @@ export const SpamBadge = styled.div`
     border-radius: ${p => p.theme.corner3xSmall};
     background-color: ${p => hexToRGBA(p.theme.accentOrange, 0.16)};
     text-transform: uppercase;
-
     font-style: normal;
     font-size: 8.5px;
     font-weight: 510;
@@ -99,6 +99,12 @@ const Timestamp = styled(Body1)`
 export const Label = styled(Body1)`
     user-select: none;
     color: ${props => props.theme.textSecondary};
+`;
+
+const CompactLabel = styled(Body2)`
+    user-select: none;
+    color: ${props => props.theme.textSecondary};
+    align-self: flex-start;
 `;
 
 export const LabelPrimary = styled(Body1)`
@@ -458,6 +464,10 @@ const FeeLabelColumn = styled.div`
     flex-direction: column;
 `;
 
+const CompactListItemPayload = styled(ListItemPayload)`
+    align-items: flex-start;
+`;
+
 const TransparentButton = styled.button`
     text-align: start;
     ${Body2Class};
@@ -512,23 +522,27 @@ export const ActionFeeDetailsUniversal: FC<
     {
         fee: TransactionFee | undefined | null;
         className?: string;
+        compact?: boolean;
     } & (FeeDetailsPropsTon | FeeDetailsPropsUniversal)
-> = ({ fee, className, ...rest }) => {
+> = ({ fee, className, compact, ...rest }) => {
     const { t } = useTranslation();
 
     const noAvailableTronOptions = rest.availableSendersOptions?.every(
         choice => isTronSenderOption(choice) && !choice.isEnoughBalance
     );
 
+    const FeeLabel = compact ? CompactLabel : Label;
+    const Payload = compact ? CompactListItemPayload : ListItemPayload;
+
     return (
         <ListItem hover={false} className={className}>
-            <ListItemPayload>
+            <Payload>
                 <FeeLabelColumn>
-                    <Label>
+                    <FeeLabel>
                         {isTransactionFeeRefund(fee ?? undefined)
                             ? t('txActions_refund')
                             : t('transaction_fee')}
-                    </Label>
+                    </FeeLabel>
                     <SelectSenderDropdown {...rest} />
                 </FeeLabelColumn>
                 {fee ? (
@@ -538,7 +552,7 @@ export const ActionFeeDetailsUniversal: FC<
                 ) : (
                     <SpinnerIcon />
                 )}
-            </ListItemPayload>
+            </Payload>
         </ListItem>
     );
 };
@@ -642,7 +656,7 @@ const SenderDropdownItem: FC<{ sender: AllChainsSenderOptions }> = ({ sender }) 
             return (
                 <>
                     <TokenImage src={TON_ASSET.image} />
-                    <Label2>{TON_ASSET.symbol}</Label2>
+                    <Label2>{BRAND_CONFIG.coinSymbolWithEx}</Label2>
                 </>
             );
         case 'gasless':
@@ -779,7 +793,7 @@ const SenderDropdownItemTronTrxOrTonAsset: FC<{
                 <Label2>{fee.extra.asset.symbol}</Label2>
                 {fiatAmount ? (
                     <Body3Secondary>
-                        {fee.extra.stringAssetRelativeAmount} (≈ {fiatAmount})
+                        {`${fee.extra.stringAssetRelativeAmount} (≈ ${fiatAmount})`}
                     </Body3Secondary>
                 ) : (
                     <Skeleton height="14px" marginTop="2px" width="100px" />

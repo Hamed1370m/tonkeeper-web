@@ -42,6 +42,7 @@ import { DesktopPreferencesRouting } from '@tonkeeper/uikit/dist/desktop-pages/p
 import { DesktopWalletSettingsRouting } from '@tonkeeper/uikit/dist/desktop-pages/settings/DesktopWalletSettingsRouting';
 import DesktopAccountSettingsPage from '@tonkeeper/uikit/dist/desktop-pages/settings/DesktopAccountSettingsPage';
 import { DesktopSwapPage } from '@tonkeeper/uikit/dist/desktop-pages/swap';
+import { DesktopStakingPage } from '@tonkeeper/uikit/dist/desktop-pages/staking';
 import { DesktopTokens } from '@tonkeeper/uikit/dist/desktop-pages/tokens/DesktopTokens';
 import { useTrackLocation } from '@tonkeeper/uikit/dist/hooks/analytics';
 import { AppContext, IAppContext } from '@tonkeeper/uikit/dist/hooks/appContext';
@@ -76,6 +77,7 @@ import { DesktopAppSdk } from '../libs/appSdk';
 import { useAnalytics, useAppHeight, useAppWidth } from '../libs/hooks';
 import { DeepLinkSubscription } from './components/DeepLink';
 import { TonConnectSubscription } from './components/TonConnectSubscription';
+import { UpdateBanner } from './components/UpdateBanner';
 import { useGlobalPreferencesQuery } from '@tonkeeper/uikit/dist/state/global-preferences';
 import { DesktopManageMultisigsPage } from '@tonkeeper/uikit/dist/desktop-pages/manage-multisig-wallets/DesktopManageMultisigs';
 import { useGlobalSetup } from '@tonkeeper/uikit/dist/state/globalSetup';
@@ -100,7 +102,7 @@ const GlobalStyle = createGlobalStyle`
     ${GlobalStyleCss};
     
     body {
-        font-family: '-apple-system', BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, Tahoma, Verdana, 'sans-serif';
+        font-family: -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, Tahoma, Verdana, sans-serif;
     }
     
     html, body, #root {
@@ -199,7 +201,6 @@ const FullSizeWrapper = styled(Container)`
 
 const Wrapper = styled.div`
     box-sizing: border-box;
-
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -253,7 +254,6 @@ const PreferencesRoutingWrapper = styled.div`
 const FullSizeWrapperBounded = styled(FullSizeWrapper)`
     max-height: 100%;
     overflow: auto;
-
     justify-content: center;
 `;
 
@@ -342,6 +342,7 @@ export const Loader: FC = () => {
                 <CopyNotification hideSimpleCopyNotifications />
                 <QrScanner />
                 <ModalsRoot />
+                <UpdateBanner />
             </CryptoStrategyInstaller>
         </AppContext.Provider>
     );
@@ -423,6 +424,7 @@ const WalletContent = () => {
                                 component={DesktopWalletSettingsRouting}
                             />
                             <Route path={AppRoute.swap} component={DesktopSwapPage} />
+                            <Route path={AppRoute.staking} component={DesktopStakingPage} />
                             <Route path="*" component={DesktopTokens} />
                         </Switch>
                         <MemoryScroll />

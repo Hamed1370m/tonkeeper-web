@@ -8,6 +8,36 @@ import {
 } from '@tonkeeper/core/dist/entries/wallet';
 import { AnalyticsEvent } from '@tonkeeper/core/dist/analytics';
 
+/**
+ * Events still tracked from app code but not defined in
+ * tonkeeper/analytics-schemas.
+ * @deprecated
+ */
+export type LegacyAnalyticsEvent =
+    | { eventName: 'page_view'; location: string }
+    | {
+          eventName: 'dapp_click';
+          url: string;
+          location: string;
+          from: 'banner' | 'browser' | 'browser_search' | 'browser_connected' | 'push' | 'sidebar';
+      };
+
+export type TrackableEvent = AnalyticsEvent | LegacyAnalyticsEvent;
+
+export type AnalyticsTracker = {
+    (event: TrackableEvent): Promise<void>;
+    /**
+     * Escape hatch for call sites whose event shape doesn't match the
+     * analytics-schemas definition (the event name may already exist upstream
+     * but with stricter required fields). Migrate these to typed events.
+     *
+     * @deprecated only events from analytics-schemas should be used
+     */
+    (name: string, params?: Record<string, string | number | boolean>): Promise<void>;
+};
+
+export const normalizeDeprecatedEventName = (eventName: string): string => eventName.toLowerCase();
+
 export type AnalyticsIdentityProps = {
     uuid_persistent: string;
     sessionId: string;
@@ -32,19 +62,11 @@ export async function getUserIdentityProps(
     return result;
 }
 
-export type AnalyticsTracker = {
-    (event: AnalyticsEvent): Promise<void>;
-    /**
-     * @deprecated
-     */
-    (name: string, params?: Record<string, string | number | boolean>): Promise<void>;
-};
-
 export interface Analytics {
     init: (params: {
         application: string;
         walletType: string;
-        activeAccount: Account;
+        activeAccount?: Account;
         accounts: Account[];
         network?: Network;
         platform?: string;

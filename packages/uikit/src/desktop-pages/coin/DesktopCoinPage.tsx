@@ -1,11 +1,12 @@
 import { BLOCKCHAIN_NAME, CryptoCurrency } from '@tonkeeper/core/dist/entries/crypto';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import { eqAddresses } from '@tonkeeper/core/dist/utils/address';
 import { shiftedDecimals } from '@tonkeeper/core/dist/utils/balance';
 import BigNumber from 'bignumber.js';
-import { FC, RefCallback, useEffect, useMemo } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import styled, { css } from 'styled-components';
 import { ArrowDownIcon, ArrowUpIcon, LinkOutIcon, PlusIcon, SwapIcon } from '../../components/Icon';
-import { Body2, Body3, Label2, Num3 } from '../../components/Text';
+import { Body2, Body3, Label2, Mono, Num3 } from '../../components/Text';
 import {
     DesktopViewHeader,
     DesktopViewHeaderContent,
@@ -23,8 +24,8 @@ import { useFetchNext } from '../../hooks/useFetchNext';
 import { AppRoute } from '../../libs/routes';
 import { useFetchFilteredActivity, useScrollMonitor } from '../../state/activity';
 import { useAssets } from '../../state/home';
-import { toTokenRate, useRate, useUSDTRate } from '../../state/rates';
-import { useAllSwapAssets } from '../../state/swap/useSwapAssets';
+import { toTokenRate, useFormatFiat, useRate, useUSDTRate } from '../../state/rates';
+import { useSwapAssetSearch } from '../../state/swap/useSwapAssets';
 import { useSwapFromAsset } from '../../state/swap/useSwapForm';
 import { FLAGGED_FEATURE, useTonendpointBuyMethods } from '../../state/tonendpoint';
 import { useActiveTonNetwork, useIsActiveWalletWatchOnly } from '../../state/wallet';
@@ -37,7 +38,8 @@ import {
 } from '@tonkeeper/core/dist/entries/crypto/asset/constants';
 import {
     jettonToTonAssetAmount,
-    tonAssetAddressFromString
+    tonAssetAddressFromString,
+    tonAssetAddressToString
 } from '@tonkeeper/core/dist/entries/crypto/asset/ton-asset';
 import { useCanReceiveTron, useTronBalances } from '../../state/tron/tron';
 import { AssetAmount } from '@tonkeeper/core/dist/entries/crypto/asset/asset-amount';
@@ -46,7 +48,6 @@ import { useNavigate } from '../../hooks/router/useNavigate';
 import { Navigate } from '../../components/shared/Navigate';
 import { useParams } from '../../hooks/router/useParams';
 import { seeIfValidTonAddress } from '@tonkeeper/core/dist/utils/common';
-import { mergeRefs } from '../../libs/common';
 import { ExternalLink } from '../../components/shared/ExternalLink';
 import { QueryKey } from '../../libs/queryKey';
 import { PullToRefresh } from '../../components/mobile-pro/PullToRefresh';
@@ -65,7 +66,7 @@ export const DesktopCoinPage = () => {
         if (!name) {
             navigate(AppRoute.home);
         }
-    }, [name]);
+    }, [name, navigate]);
 
     const canUseTron = useCanReceiveTron();
 
@@ -110,6 +111,55 @@ const ButtonStyled = styled(Button)`
     }
 `;
 
+const CoinPriceSectionWrapper = styled.div`
+    padding: 12px 16px;
+    border-bottom: 1px solid ${p => p.theme.separatorCommon};
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+`;
+
+const CoinPriceValue = styled(Label2)`
+    color: ${p => p.theme.textPrimary};
+`;
+
+const CoinPriceDelta = styled(Body3)<{ $positive: boolean }>`
+    ${props =>
+        props.$positive
+            ? css`
+                  color: ${props.theme.accentGreen};
+              `
+            : css`
+                  color: ${props.theme.accentRed};
+              `}
+`;
+
+const CoinPriceSection: FC<{ token: string }> = ({ token }) => {
+    const { data: rate } = useRate(token);
+    const { fiatPrice } = useFormatFiat(rate, 1);
+
+    if (!rate || !fiatPrice) {
+        return null;
+    }
+
+    const diff24h = rate.diff24h;
+    const showDelta = Boolean(diff24h && diff24h !== '0.00%');
+    const positive = Boolean(diff24h?.startsWith('+'));
+
+    return (
+        <CoinPriceSectionWrapper>
+            <CoinPriceValue>
+                <Mono>{fiatPrice}</Mono>
+            </CoinPriceValue>
+            {showDelta && diff24h && (
+                <CoinPriceDelta $positive={positive}>
+                    <Mono>{diff24h}</Mono>
+                </CoinPriceDelta>
+            )}
+        </CoinPriceSectionWrapper>
+    );
+};
+
 const CoinHeader: FC<{ token: string }> = ({ token }) => {
     const { t } = useTranslation();
     const { isOpen, onClose, onOpen } = useDisclosure();
@@ -118,13 +168,12 @@ const CoinHeader: FC<{ token: string }> = ({ token }) => {
     const isReadOnly = useIsActiveWalletWatchOnly();
     const { data: buy } = useTonendpointBuyMethods();
     const canBuy = token === CryptoCurrency.TON && network !== Network.TESTNET;
-    const { data: swapAssets } = useAllSwapAssets();
-
     const currentAssetAddress = tonAssetAddressFromString(token);
-    const swapAsset =
+    const swapAsset = useSwapAssetSearch(
         isReadOnly || network === Network.TESTNET
             ? undefined
-            : swapAssets?.find(a => eqAddresses(a.address, currentAssetAddress));
+            : tonAssetAddressToString(currentAssetAddress)
+    );
 
     const [_, setSwapFromAsset] = useSwapFromAsset();
     const navigate = useNavigate();
@@ -133,7 +182,6 @@ const CoinHeader: FC<{ token: string }> = ({ token }) => {
         setSwapFromAsset(swapAsset!);
         navigate(AppRoute.swap, { replace: false });
     };
-
     const sdk = useAppSdk();
     return (
         <CoinHeaderStyled>
@@ -206,7 +254,6 @@ const CoinHeader: FC<{ token: string }> = ({ token }) => {
 const CoinInfoWrapper = styled.div`
     padding: 1rem 0;
     display: flex;
-
     gap: 1rem;
 
     > img {
@@ -219,7 +266,6 @@ const CoinInfoWrapper = styled.div`
 const TronCoinInfoWrapper = styled.div`
     padding: 1rem 0;
     display: flex;
-
     gap: 1rem;
 
     > img {
@@ -261,7 +307,7 @@ const CoinInfo: FC<{ token: string }> = ({ token }) => {
             const amount = assets.ton.info.balance;
             return {
                 image: TON_ASSET.image!,
-                symbol: TON_ASSET.symbol,
+                symbol: BRAND_CONFIG.coinSymbolWithEx,
                 amount: format(amount),
                 fiatAmount: formatFiatCurrency(
                     fiat,
@@ -306,7 +352,7 @@ const CoinInfo: FC<{ token: string }> = ({ token }) => {
             amount: format(extra.amount, extra.preview.decimals),
             fiatAmount: formatFiatCurrency(fiat, 0) // TODO: Extra Currency Rates
         };
-    }, [assets, format, rate, fiat]);
+    }, [assets, format, rate, fiat, token]);
 
     if (!asset) {
         return <></>;
@@ -335,8 +381,7 @@ const HistoryContainer = styled.div`
     ${p =>
         p.theme.proDisplayType === 'desktop' &&
         css`
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: auto hidden;
         `}
 `;
 
@@ -365,7 +410,7 @@ const CoinPage: FC<{ token: string }> = ({ token }) => {
 
     const scrollMonitorRef = useScrollMonitor(refetch, 5000);
 
-    const fetchRef = useFetchNext(hasNextPage, isFetchingNextPage, fetchNextPage, true);
+    const setSentinelRef = useFetchNext(hasNextPage, isFetchingNextPage, fetchNextPage);
 
     const [assets] = useAssets();
     const asset = useMemo(() => {
@@ -373,7 +418,7 @@ const CoinPage: FC<{ token: string }> = ({ token }) => {
             return null;
         }
         if (token === CryptoCurrency.TON) {
-            return { assetSymbol: 'Toncoin', isUnverified: false };
+            return { assetSymbol: BRAND_CONFIG.coinName, isUnverified: false };
         }
 
         if (seeIfValidTonAddress(decodeURIComponent(token))) {
@@ -390,7 +435,7 @@ const CoinPage: FC<{ token: string }> = ({ token }) => {
         } else {
             return undefined;
         }
-    }, [assets, t, token]);
+    }, [assets, token]);
 
     const { mainnetConfig } = useAppContext();
     const tonviewer = new URL(mainnetConfig.accountExplorer).origin;
@@ -400,9 +445,7 @@ const CoinPage: FC<{ token: string }> = ({ token }) => {
     }
 
     return (
-        <DesktopViewPageLayout
-            ref={mergeRefs(scrollMonitorRef, fetchRef) as RefCallback<HTMLDivElement>}
-        >
+        <DesktopViewPageLayout ref={scrollMonitorRef}>
             <DesktopViewHeader backButton borderBottom>
                 <DesktopViewHeaderContent
                     title={
@@ -446,9 +489,11 @@ const CoinPage: FC<{ token: string }> = ({ token }) => {
                 ]}
             />
             <CoinHeader token={token} />
+            <CoinPriceSection token={token} />
             <HistorySubheader>{t('page_header_history')}</HistorySubheader>
             <HistoryContainer>
                 <DesktopHistory isFetchingNextPage={isFetchingNextPage} activity={activity} />
+                <div ref={setSentinelRef} />
             </HistoryContainer>
         </DesktopViewPageLayout>
     );
@@ -506,12 +551,12 @@ export const TronUSDTPage = () => {
 
     const setScrollRef = useScrollMonitor(refetch, 5000);
 
-    const setFetchNextRef = useFetchNext(hasNextPage, isFetchingNextPage, fetchNextPage, true);
+    const setSentinelRef = useFetchNext(hasNextPage, isFetchingNextPage, fetchNextPage);
 
     const { data: rate } = useUSDTRate();
 
     return (
-        <DesktopViewPageLayoutStyled ref={mergeRefs<HTMLDivElement>(setScrollRef, setFetchNextRef)}>
+        <DesktopViewPageLayoutStyled ref={setScrollRef}>
             <DesktopViewHeader backButton borderBottom={true}>
                 <DesktopViewHeaderContent
                     title={
@@ -578,6 +623,7 @@ export const TronUSDTPage = () => {
             <HistorySubheader>{t('page_header_history')}</HistorySubheader>
             <HistoryContainer>
                 <DesktopHistory isFetchingNextPage={isFetchingNextPage} activity={activity} />
+                <div ref={setSentinelRef} />
             </HistoryContainer>
         </DesktopViewPageLayoutStyled>
     );

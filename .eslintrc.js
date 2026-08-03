@@ -9,7 +9,10 @@ module.exports = {
         'no-plusplus': 'off',
         'class-method-use-this': 'off',
         eqeqeq: ['error', 'smart'],
-        complexity: 'error',
+        // disabled: most violations are essential complexity in React render branches
+        // (state-machine dispatch on discriminated unions) where splitting helpers
+        // hides cases behind indirection without reducing total cognitive load
+        complexity: 'off',
         'no-empty': ['error'],
         'no-restricted-globals': 'error',
         'no-param-reassign': 'off',
@@ -19,16 +22,19 @@ module.exports = {
         'array-bracket-spacing': ['error', 'never'],
         'object-curly-spacing': ['error', 'always'],
         indent: 'off',
-        'max-classes-per-file': 'error',
+        // codebase deliberately groups tightly-coupled classes in single files
+        // (Atom/Subject/ReplaySubject, polyfill class sets, SDK + helpers)
+        'max-classes-per-file': 'off',
         radix: ['error', 'as-needed'],
         'no-return-assign': 'off',
         'no-restricted-syntax': ['error', 'LabeledStatement', 'WithStatement'],
         'no-console': [
-            'warn',
+            'error',
             {
-                allow: ['debug', 'error', 'info']
+                allow: ['debug', 'error', 'info', 'warn']
             }
-        ]
+        ],
+        'prettier/prettier': 'error'
     },
     overrides: [
         {
@@ -67,7 +73,6 @@ module.exports = {
                 '@typescript-eslint',
                 'import',
                 'unused-imports',
-                'chakra-ui',
                 'i18next'
             ],
             extends: [
@@ -75,7 +80,8 @@ module.exports = {
                 'plugin:react/recommended',
                 'plugin:react-hooks/recommended',
                 'plugin:@typescript-eslint/recommended',
-                'plugin:i18next/recommended'
+                'plugin:i18next/recommended',
+                'prettier'
             ],
             rules: {
                 /* imports */
@@ -94,6 +100,11 @@ module.exports = {
                     'error',
                     { devDependencies: false, optionalDependencies: false, peerDependencies: false }
                 ],
+                // import/no-unresolved without a TypeScript resolver produces thousands of
+                // false positives in this workspace setup (e.g. @tonkeeper/core/dist/... and
+                // styled-components subpath imports). Disable until eslint-import-resolver-typescript
+                // is configured.
+                'import/no-unresolved': 'off',
                 'unused-imports/no-unused-imports': 'error',
                 'unused-imports/no-unused-vars': [
                     'error',
@@ -105,6 +116,9 @@ module.exports = {
                         varsIgnorePattern: '^_'
                     }
                 ],
+                // disabled in favor of unused-imports/no-unused-vars (above), which honors the ^_ ignore pattern
+                '@typescript-eslint/no-unused-vars': 'off',
+                'prefer-const': 'error',
 
                 /* typescript */
                 '@typescript-eslint/no-use-before-define': 'off',
@@ -126,17 +140,41 @@ module.exports = {
                 '@typescript-eslint/indent': 'off',
                 '@typescript-eslint/no-non-null-assertion': 'off',
                 '@typescript-eslint/no-redeclare': ['error', { ignoreDeclarationMerge: true }],
+                '@typescript-eslint/ban-types': 'error',
+                '@typescript-eslint/no-unused-expressions': 'error',
 
                 /* react */
                 'react/react-in-jsx-scope': 'off',
                 'i18next/no-literal-string': [
-                    'warn',
+                    'error',
                     {
-                        exclude: ['Ton Console']
+                        words: {
+                            // user options replace defaults entirely, so we re-list the
+                            // plugin defaults (numbers/symbols, uppercase tokens, html
+                            // entities, emoji) alongside our brand/protocol exemptions
+                            exclude: [
+                                '[0-9!-/:-@[-`{-~]+',
+                                '[A-Z_-]+',
+                                require('eslint-plugin-i18next/lib/options/htmlEntities'),
+                                /^\p{Emoji}+$/u,
+                                'Tonkeeper',
+                                'Tonkeeper Pro',
+                                'Tonkeeper Web',
+                                'Ton Console',
+                                'Tonviewer',
+                                'TRC20',
+                                'Beta',
+                                'Testnet',
+                                'Ledger',
+                                'Signer',
+                                'USD₮',
+                                '≈'
+                            ]
+                        }
                     }
                 ],
                 'react-hooks/rules-of-hooks': 'error',
-                'react-hooks/exhaustive-deps': 'off',
+                'react-hooks/exhaustive-deps': 'error',
                 'react/display-name': 'off',
                 'react/prop-types': 'off'
             },
@@ -151,6 +189,13 @@ module.exports = {
             rules: {
                 '@typescript-eslint/explicit-function-return-type': 'off',
                 'import/no-extraneous-dependencies': ['error', { devDependencies: true }]
+            }
+        },
+        {
+            // build/task scripts run in Node; console is their primary output
+            files: ['**/task/**/*.ts', '**/*.config.ts', '**/forge.config.ts'],
+            rules: {
+                'no-console': 'off'
             }
         }
     ]

@@ -1,4 +1,5 @@
 import React, { FC } from 'react';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import styled, { css } from 'styled-components';
 import { Notification } from '../Notification';
 import { Body2Class, Body3, Label1Class, Label2 } from '../Text';
@@ -22,6 +23,7 @@ import { FLAGGED_FEATURE, useIsFeatureEnabled } from '../../state/tonendpoint';
 import { isTelegramActiveSubscription } from '@tonkeeper/core/dist/entries/pro';
 import { useProAuthNotification } from '../modals/ProAuthNotificationControlled';
 import { useProState } from '../../state/pro';
+import { useIsFullWidthMode } from '../../hooks/useIsFullWidthMode';
 
 const NotificationStyled = styled(Notification)`
     max-width: 648px;
@@ -231,6 +233,7 @@ const TopUpTronFeeBalanceContent: FC<{ onClose: () => void }> = ({ onClose }) =>
     const { data: trc20FreeTransfersConfig } = useTrc20FreeTransfersConfig();
     const formatDate = useDateTimeFormat();
     const isTronEnabled = useIsFeatureEnabled(FLAGGED_FEATURE.TRON);
+    const isFullWidthMode = useIsFullWidthMode();
 
     const onTopupToken = (asset: 'ton' | 'trx') => {
         sdk.uiEvents.emit('receive', {
@@ -302,7 +305,7 @@ const TopUpTronFeeBalanceContent: FC<{ onClose: () => void }> = ({ onClose }) =>
                         <MethodImage src={TON_ASSET.image} />
                         <MobileBlockWrapper>
                             <MethodInfo>
-                                <CardTitle>{TON_ASSET.symbol}</CardTitle>
+                                <CardTitle>{BRAND_CONFIG.coinSymbolWithEx}</CardTitle>
                                 <CardSubtitle>{t('topup_tron_fee_ton_description')}</CardSubtitle>
                             </MethodInfo>
                             {tonSenderFee.fiatAmount ? (
@@ -349,7 +352,7 @@ const TopUpTronFeeBalanceContent: FC<{ onClose: () => void }> = ({ onClose }) =>
                 </MethodCard>
             </Cards>
 
-            {isTronEnabled && (
+            {isTronEnabled && isFullWidthMode && (
                 <ProCard>
                     <TonkeeperProCardIcon />
                     <MethodInfo>

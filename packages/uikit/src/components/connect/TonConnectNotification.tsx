@@ -7,11 +7,11 @@ import {
 } from '@tonkeeper/core/dist/entries/tonConnect';
 import {
     checkDappOriginMatchesManifest,
-    getBrowserPlatform,
     getDeviceInfo,
-    getManifest
+    getManifest,
+    getTonConnectPlatform
 } from '@tonkeeper/core/dist/service/tonConnect/connectService';
-import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FC, useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { useAppSdk } from '../../hooks/appSdk';
 import { useTranslation } from '../../hooks/translation';
@@ -31,7 +31,6 @@ import { isStandardTonWallet, WalletId, WalletVersion } from '@tonkeeper/core/di
 import { TonConnectConnectionParams } from '@tonkeeper/core/dist/service/tonConnect/connectionService';
 import { useTrackTonConnectConnectionRequest } from '../../hooks/analytics/events-hooks';
 import { useAnalyticsTrack } from '../../hooks/analytics';
-import { AnalyticsEventTcConnect } from '@tonkeeper/core/dist/analytics';
 import { TonConnectError } from '@tonkeeper/core/dist/entries/exception';
 import { originFromUrl } from '@tonkeeper/core/dist/utils/url';
 import { getErrorText } from '@tonkeeper/core/dist/errors/TranslatableError';
@@ -68,7 +67,6 @@ const ImageRow = styled.div`
 const Image = styled.img`
     width: 72px;
     height: 72px;
-
     border-radius: ${props => props.theme.cornerMedium};
 `;
 
@@ -113,12 +111,6 @@ const ConnectContent: FC<{
 
     const { t } = useTranslation();
 
-    useEffect(() => {
-        if (sdk.twaExpand) {
-            sdk.twaExpand();
-        }
-    }, []);
-
     const [error, setError] = useState<Error | null>(null);
     const { mutateAsync, isLoading } = useGetTonConnectConnectResponse();
     useTrackTonConnectConnectionRequest(params.manifestUrl);
@@ -150,7 +142,7 @@ const ConnectContent: FC<{
                         replyItems: {
                             items: replyItems,
                             device: getDeviceInfo(
-                                getBrowserPlatform(),
+                                getTonConnectPlatform(sdk.targetEnv),
                                 sdk.version,
                                 maxMessages,
                                 appName
@@ -161,9 +153,11 @@ const ConnectContent: FC<{
                     }),
                 300
             );
-            track(
-                new AnalyticsEventTcConnect({ dapp_url: manifest.url, allow_notifications: false })
-            );
+            track({
+                eventName: 'tc_connect',
+                dapp_url: manifest.url,
+                allow_notifications: false
+            });
         } catch (err) {
             setDone(true);
             console.error(err);

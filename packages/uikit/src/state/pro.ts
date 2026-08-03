@@ -23,6 +23,7 @@ import {
     getProSupportUrl,
     ProAuthViaSeedPhraseParams,
     setBackupState,
+    backwardCompatibilityFilter,
     startProServiceTrial
 } from '@tonkeeper/core/dist/service/proService';
 import { useAppContext } from '../hooks/appContext';
@@ -37,7 +38,7 @@ import {
     getWalletById,
     isAccountTonWalletStandard
 } from '@tonkeeper/core/dist/entries/account';
-import { useActiveApi, useActiveConfig } from './wallet';
+import { useActiveApi, useActiveConfig, useProCompatibleAccountsWallets } from './wallet';
 import { AppKey } from '@tonkeeper/core/dist/Keys';
 import { useAtom } from '../libs/useAtom';
 import { subscriptionFormTempAuth$ } from '@tonkeeper/core/dist/ProAuthTokenService';
@@ -55,14 +56,21 @@ export const useTrialAvailability = () => {
     const sdk = useAppSdk();
     const platform = useAppTargetEnv();
     const config = useActiveConfig();
+    const compatibleWallets = useProCompatibleAccountsWallets(backwardCompatibilityFilter);
+    const hasCompatibleWallets = compatibleWallets.length > 0;
 
     return useQuery<boolean, Error>(
-        [QueryKey.pro, QueryKey.trialAvailability, config.pro_trial_tg_bot_id],
+        [
+            QueryKey.pro,
+            QueryKey.trialAvailability,
+            config.pro_trial_tg_bot_id,
+            hasCompatibleWallets
+        ],
         async () => {
             const isUsedTrial = Boolean(await sdk.storage.get(AppKey.PRO_USED_TRIAL));
             const botIdIsSet = !!config.pro_trial_tg_bot_id;
 
-            return platform !== 'tablet' && !isUsedTrial && botIdIsSet;
+            return platform !== 'tablet' && !isUsedTrial && botIdIsSet && hasCompatibleWallets;
         }
     );
 };
@@ -105,7 +113,7 @@ export const useOpenSupport = () => {
     const { data: support } = useSupport();
     return useCallback(
         () => sdk.openPage(support.url, { forceExternalBrowser: true }),
-        [support.url]
+        [support.url, sdk]
     );
 };
 
@@ -393,7 +401,14 @@ export const useActivateTrialMutation = () => {
             throw new Error('Pro trial tg bot id is not set');
         }
 
-        const token = await startProServiceTrial(config.pro_trial_tg_bot_id, language);
+        const authToken =
+            subscriptionFormTempAuth$.value?.tempToken ??
+            (await sdk.subscriptionService.getToken());
+        if (!authToken) {
+            throw new Error('Auth token is required for trial activation');
+        }
+
+        const token = await startProServiceTrial(config.pro_trial_tg_bot_id, authToken, language);
 
         await sdk.subscriptionService.activateTrial(token);
         await client.invalidateQueries([QueryKey.pro]);

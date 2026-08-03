@@ -33,7 +33,9 @@ const unzip = (zipFile: string) => {
 };
 
 const loadTransactions = async () => {
-    if (process.env.TOLGEE_TOKEN == undefined) return;
+    if (process.env.TOLGEE_TOKEN === undefined) return;
+    // eslint-disable-next-line no-console
+    console.log('TOLGEE_TOKEN is set');
 
     if (fs.existsSync(src)) {
         fs.rmSync(src, { recursive: true, force: true });
@@ -71,7 +73,7 @@ const fillMissingLocales = (
 ) => {
     Object.entries(resources).forEach(([locale, { translation }]) => {
         Object.entries(defaultResource).forEach(([key, value]) => {
-            if (translation[key] == undefined) {
+            if (translation[key] === undefined) {
                 translation[key] = value;
             }
         });
@@ -115,6 +117,10 @@ const fixMessage = (message: string) => {
 
     // Replace {value} with %{value}, excluding already existing %{value} or {{value}}
     message = message.replace(/(?<!\{)(?<!%)({([^{}]+)})(?!\})/g, '%{$2}');
+
+    // U+2028 / U+2029 are valid JSON but trip strict parsers (incl. tsc resolveJsonModule).
+    // Tolgee occasionally emits them where a real newline was intended.
+    message = message.replace(/[\u2028\u2029]/g, '\n');
     return message;
 };
 

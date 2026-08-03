@@ -28,7 +28,6 @@ import { handleSubmit } from '../../libs/form';
 import { ErrorIcon } from '../Icon';
 import { Cell } from '@ton/core';
 import { useAnalyticsTrack } from '../../hooks/analytics';
-import { AnalyticsEventTcSignDataSuccess } from '@tonkeeper/core/dist/analytics';
 
 const useSignMutation = (origin: string, payload: SignDataRequestPayload) => {
     const activeAccount = useActiveAccount();
@@ -70,8 +69,7 @@ const Payload = styled.div`
         props.theme.displayType === 'full-width'
             ? props.theme.corner2xSmall
             : props.theme.cornerMedium};
-
-    padding: 16px 16px;
+    padding: 16px;
     width: 100%;
     box-sizing: border-box;
 `;
@@ -96,14 +94,12 @@ const WarningBlock = styled.div`
     width: 100%;
     box-sizing: border-box;
     padding: 12px 16px;
-
     background-color: ${props => props.theme.accentOrange};
     position: relative;
     border-radius: ${props =>
         props.theme.displayType === 'full-width'
             ? props.theme.corner2xSmall
             : props.theme.cornerMedium};
-
     user-select: none;
 `;
 
@@ -192,7 +188,7 @@ const ErrorStyled = styled.div`
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    margin: 1rem 0px 2rem;
+    margin: 1rem 0 2rem;
 `;
 
 const Header = styled(H2)`
@@ -350,14 +346,13 @@ export const SignDataNotification: FC<{
     const onClose = useCallback(
         (result?: SignDataResponse) => {
             handleClose(result);
-            track(
-                new AnalyticsEventTcSignDataSuccess({
-                    dapp_url: origin!,
-                    payload_type: params!.type
-                })
-            );
+            track({
+                eventName: 'tc_sign_data_success',
+                dapp_url: origin!,
+                payload_type: params!.type
+            });
         },
-        [handleClose]
+        [handleClose, track, origin, params]
     );
 
     const Content = useCallback(() => {

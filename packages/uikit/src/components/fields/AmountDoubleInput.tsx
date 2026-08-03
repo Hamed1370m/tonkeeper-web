@@ -1,4 +1,12 @@
-import React, { forwardRef, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, {
+    forwardRef,
+    ReactNode,
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState
+} from 'react';
 import styled from 'styled-components';
 import { replaceTypedDecimalSeparator, seeIfValueValid } from '../transfer/amountView/AmountViewUI';
 import { getTextWidth } from '../../hooks/textWidth';
@@ -16,19 +24,16 @@ const SentenceInput = styled.input`
     font-size: inherit;
     background: transparent;
     color: ${props => props.theme.textPrimary};
-
-    font-family: 'Montserrat', sans-serif;
+    font-family: Montserrat, sans-serif;
     font-style: normal;
     font-weight: 600;
-
     line-height: 49px;
     text-align: right;
-
-    -moz-appearance: textfield;
+    appearance: textfield;
 
     &::-webkit-outer-spin-button,
     &::-webkit-inner-spin-button {
-        -webkit-appearance: none;
+        appearance: none;
     }
 `;
 
@@ -119,10 +124,9 @@ const Symbol = styled.span<{ $fontSize: number }>`
     padding-left: 12px;
     white-space: pre;
     font-weight: 600;
-
     font-size: ${p => p.$fontSize}px;
 
-    @media (max-width: 600px) {
+    @media (width <= 600px) {
         padding-left: 8px;
     }
 `;
@@ -132,18 +136,14 @@ const SecondCurrencyBlock = styled(Body1)`
     align-items: center;
     cursor: pointer;
     z-index: 2;
-
     padding: 8px 16px;
-
     color: ${props => props.theme.textSecondary};
     border: 1px solid ${props => props.theme.buttonTertiaryBackground};
     border-radius: ${props => props.theme.cornerLarge};
-
     max-width: 80%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: pre;
-
     user-select: none;
 `;
 
@@ -190,93 +190,103 @@ export const AmountDoubleInput = forwardRef<
         }
     }, [currencyAmount.inputValue, fontSize]);
 
-    const inputValueToBN = (v: string) =>
-        new BigNumber(removeGroupSeparator(v).replace(getDecimalSeparator(), '.'));
+    const inputValueToBN = useCallback(
+        (v: string) => new BigNumber(removeGroupSeparator(v).replace(getDecimalSeparator(), '.')),
+        []
+    );
 
     const activeCurrency = currencies.find(c => c.id === currencyAmount.activeCurrencyId)!;
     const notActiveCurrency = currencies.find(c => c.id !== currencyAmount.activeCurrencyId)!;
 
-    const onInput = (newValue: string) => {
-        const decimals = activeCurrency.decimals;
+    const onInput = useCallback(
+        (newValue: string) => {
+            const decimals = activeCurrency.decimals;
 
-        if (!decimals && (newValue.endsWith('.') || newValue.endsWith(','))) {
-            return;
-        }
-
-        let inputValue = replaceTypedDecimalSeparator(newValue);
-
-        if (!inputValue) {
-            setCurrencyAmount(s => ({
-                ...s,
-                inputValue,
-                value1: '',
-                value2: ''
-            }));
-            onChange?.({
-                currencyId: currencyAmount.activeCurrencyId,
-                input: new BigNumber(0)
-            });
-            return;
-        }
-
-        if (!seeIfValueValid(inputValue, decimals)) {
-            onChange?.({
-                currencyId: currencyAmount.activeCurrencyId,
-                input: new BigNumber(0)
-            });
-            return;
-        }
-
-        let value1 = currencyAmount.value1;
-        let value2 = currencyAmount.value2;
-
-        if (isNumeric(inputValue) && !inputValue.endsWith(getDecimalSeparator())) {
-            const formattedInput = formatSendValue(inputValue);
-            const bnInput = inputValueToBN(inputValue);
-
-            if (currencyAmount.activeCurrencyId === currencies[1].id) {
-                const bnValue1 =
-                    typeof rate === 'function'
-                        ? rate({ currencyId: currencyAmount.activeCurrencyId, value: bnInput })
-                        : bnInput.div(rate);
-
-                value1 = formatter.format(bnValue1, {
-                    decimals: currencies[0].decimals
-                });
-
-                value2 = formattedInput;
-            } else {
-                const bnValue2 =
-                    typeof rate === 'function'
-                        ? rate({ currencyId: currencyAmount.activeCurrencyId, value: bnInput })
-                        : bnInput.multipliedBy(rate);
-
-                value2 = formatter.format(bnValue2, {
-                    decimals: currencies[1].decimals
-                });
-
-                value1 = formattedInput;
+            if (!decimals && (newValue.endsWith('.') || newValue.endsWith(','))) {
+                return;
             }
 
-            inputValue = formatSendValue(inputValue);
-        }
+            let inputValue = replaceTypedDecimalSeparator(newValue);
 
-        onChange?.({
-            currencyId: currencyAmount.activeCurrencyId,
-            input: inputValueToBN(
-                currencyAmount.activeCurrencyId === currencies[0].id ? value1 : value2
-            )
-        });
+            if (!inputValue) {
+                setCurrencyAmount(s => ({
+                    ...s,
+                    inputValue,
+                    value1: '',
+                    value2: ''
+                }));
+                onChange?.({
+                    currencyId: currencyAmount.activeCurrencyId,
+                    input: new BigNumber(0)
+                });
+                return;
+            }
 
-        setCurrencyAmount({
-            activeCurrencyId: currencyAmount.activeCurrencyId,
-            inputValue,
-            value1,
-            value2
-        });
-    };
+            if (!seeIfValueValid(inputValue, decimals)) {
+                onChange?.({
+                    currencyId: currencyAmount.activeCurrencyId,
+                    input: new BigNumber(0)
+                });
+                return;
+            }
+
+            let value1 = currencyAmount.value1;
+            let value2 = currencyAmount.value2;
+
+            if (isNumeric(inputValue) && !inputValue.endsWith(getDecimalSeparator())) {
+                const formattedInput = formatSendValue(inputValue);
+                const bnInput = inputValueToBN(inputValue);
+
+                if (currencyAmount.activeCurrencyId === currencies[1].id) {
+                    const bnValue1 =
+                        typeof rate === 'function'
+                            ? rate({ currencyId: currencyAmount.activeCurrencyId, value: bnInput })
+                            : bnInput.div(rate);
+
+                    value1 = formatter.format(bnValue1, {
+                        decimals: currencies[0].decimals
+                    });
+
+                    value2 = formattedInput;
+                } else {
+                    const bnValue2 =
+                        typeof rate === 'function'
+                            ? rate({ currencyId: currencyAmount.activeCurrencyId, value: bnInput })
+                            : bnInput.multipliedBy(rate);
+
+                    value2 = formatter.format(bnValue2, {
+                        decimals: currencies[1].decimals
+                    });
+
+                    value1 = formattedInput;
+                }
+
+                inputValue = formatSendValue(inputValue);
+            }
+
+            onChange?.({
+                currencyId: currencyAmount.activeCurrencyId,
+                input: inputValueToBN(
+                    currencyAmount.activeCurrencyId === currencies[0].id ? value1 : value2
+                )
+            });
+
+            setCurrencyAmount({
+                activeCurrencyId: currencyAmount.activeCurrencyId,
+                inputValue,
+                value1,
+                value2
+            });
+        },
+        [activeCurrency, currencyAmount, currencies, rate, onChange, inputValueToBN]
+    );
 
     const onToggleCurrency = () => {
+        const secondaryValue =
+            currencyAmount.activeCurrencyId === currencies[0].id
+                ? currencyAmount.value2
+                : currencyAmount.value1;
+
         setCurrencyAmount(s => ({
             ...s,
             activeCurrencyId:
@@ -289,17 +299,13 @@ export const AmountDoubleInput = forwardRef<
                 currencyAmount.activeCurrencyId === currencies[0].id
                     ? currencies[1].id
                     : currencies[0].id,
-            input: inputValueToBN(
-                currencyAmount.activeCurrencyId === currencies[0].id
-                    ? currencyAmount.value2
-                    : currencyAmount.value1
-            )
+            input: secondaryValue ? inputValueToBN(secondaryValue) : new BigNumber(0)
         });
     };
 
     useEffect(() => {
         onInput(currencyAmount.inputValue);
-    }, [currencies]);
+    }, [currencyAmount.inputValue, onInput]);
 
     const zeroValue = () => {
         const decimals = notActiveCurrency.decimals;

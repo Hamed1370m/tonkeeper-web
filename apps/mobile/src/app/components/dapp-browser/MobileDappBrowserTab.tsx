@@ -58,11 +58,6 @@ import { useSubjectValue } from '@tonkeeper/uikit/dist/libs/useAtom';
 import { AccountAndWalletInfo } from '@tonkeeper/uikit/dist/components/account/AccountAndWalletInfo';
 import { AccountConnectionInjected } from '@tonkeeper/core/dist/service/tonConnect/connectionService';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-    AnalyticsEventDappPin,
-    AnalyticsEventDappSharingCopy,
-    AnalyticsEventDappUnpin
-} from '@tonkeeper/core/dist/analytics';
 import { useCountryContextTracker } from '@tonkeeper/uikit/dist/hooks/analytics/events-hooks';
 import { useAnalyticsTrack } from '@tonkeeper/uikit/dist/hooks/analytics';
 
@@ -86,14 +81,12 @@ const BackgroundStyled = styled.div<{ $isTransparent: boolean }>`
     justify-content: center;
     gap: 8px;
     height: 100%;
-
     ${p =>
         p.$isTransparent &&
         css`
             background-color: transparent;
             opacity: 0;
         `};
-
     transition: opacity 0.1s ease-in-out, background-color 0.1s ease-in-out;
 
     img {
@@ -121,7 +114,7 @@ export const MobileDappBrowserTab: FC<{
         if (activeWallet.id === asideLastSelectedWalletId) {
             capacitorTonConnectInjectedConnector.changeConnectedWalletToActive(tab);
         }
-    }, [activeWallet.id]);
+    }, [activeWallet.id, asideLastSelectedWalletId, tab]);
 
     const { data: activeConnection } = useInjectedDappConnectionByOrigin(originFromUrl(tab.url));
     const [bannerData, setBannerData] = useState<WalletId | undefined>(undefined);
@@ -164,9 +157,8 @@ export const MobileDappBrowserTab: FC<{
 const TabHeaderWrapper = styled.div`
     box-sizing: content-box;
     height: 32px;
-    padding: env(safe-area-inset-top) 0 4px 0;
+    padding: env(safe-area-inset-top) 0 4px;
     background-color: ${p => p.theme.backgroundPage};
-
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -316,14 +308,16 @@ const TabHeader: FC<{
                                             );
                                             countryContextTrack(country =>
                                                 isPinned
-                                                    ? new AnalyticsEventDappUnpin({
+                                                    ? {
+                                                          eventName: 'dapp_unpin',
                                                           url: tab.url,
                                                           location: country
-                                                      })
-                                                    : new AnalyticsEventDappPin({
+                                                      }
+                                                    : {
+                                                          eventName: 'dapp_pin',
                                                           url: tab.url,
                                                           location: country
-                                                      })
+                                                      }
                                             );
                                         }}
                                     >
@@ -348,12 +342,11 @@ const TabHeader: FC<{
                             <DropDownItemStyled
                                 onClick={() => {
                                     closeDropDown();
-                                    track(
-                                        new AnalyticsEventDappSharingCopy({
-                                            url: tab.url,
-                                            from: 'Share'
-                                        })
-                                    );
+                                    track({
+                                        eventName: 'dapp_sharing_copy',
+                                        url: tab.url,
+                                        from: 'Share'
+                                    });
                                     sdk.hapticNotification('success');
                                     Share.share({
                                         url: tab.url
@@ -370,12 +363,11 @@ const TabHeader: FC<{
                                 onClick={() => {
                                     closeDropDown();
                                     sdk.copyToClipboard(tab.url);
-                                    track(
-                                        new AnalyticsEventDappSharingCopy({
-                                            url: tab.url,
-                                            from: 'Copy link'
-                                        })
-                                    );
+                                    track({
+                                        eventName: 'dapp_sharing_copy',
+                                        url: tab.url,
+                                        from: 'Copy link'
+                                    });
                                 }}
                             >
                                 <Label2>{t('browser_actions_copy_link')}</Label2>

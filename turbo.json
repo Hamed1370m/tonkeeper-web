@@ -10,10 +10,6 @@
             "dependsOn": ["^build:pkg"],
             "outputs": [".next/**", "dist/**"]
         },
-        "build:swap-widget": {
-            "dependsOn": ["^build:pkg"],
-            "outputs": [".next/**", "dist/**"]
-        },
         "build:ipad": {
             "dependsOn": ["^build:pkg"],
             "outputs": [".next/**", "dist/**"]
@@ -37,8 +33,14 @@
             "outputs": [".next/**", "dist/**"]
         },
         "dev": {
-            "dependsOn": ["^dev"],
-            "outputs": [".next/**", "dist/**"]
+            "cache": false
+        },
+        "typecheck": {
+            "dependsOn": ["^build:pkg"],
+            "outputs": []
+        },
+        "lint": {
+            "outputs": []
         }
     }
 }

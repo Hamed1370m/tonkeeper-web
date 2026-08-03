@@ -1,4 +1,4 @@
-import { CryptoCurrency } from '@tonkeeper/core/dist/entries/crypto';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import { Action } from '@tonkeeper/core/dist/tonApiV2';
 import { formatAddress } from '@tonkeeper/core/dist/utils/common';
 import React, { FC } from 'react';
@@ -30,7 +30,7 @@ export const DepositStakeAction: FC<{
             <ColumnLayout
                 title={t('staking_deposit')}
                 amount={<>-&thinsp;{format(depositStake.amount)}</>}
-                entry={CryptoCurrency.TON}
+                entry={BRAND_CONFIG.coinSymbolWithEx}
                 address={toAddressTextValue(
                     depositStake.pool.name,
                     formatAddress(depositStake.pool.address, network, true)
@@ -61,7 +61,7 @@ export const WithdrawStakeAction: FC<{
             <ColumnLayout
                 title={t('staking_withdraw')}
                 amount={<>+&thinsp;{format(withdrawStake.amount)}</>}
-                entry={CryptoCurrency.TON}
+                entry={BRAND_CONFIG.coinSymbolWithEx}
                 green
                 address={toAddressTextValue(
                     withdrawStake.pool.name,
@@ -86,6 +86,17 @@ export const WithdrawRequestStakeAction: FC<{
         return <ErrorAction />;
     }
 
+    const stakeMeta = withdrawStakeRequest.stakeMeta;
+    let amountNode: React.ReactNode | undefined;
+    let entry = '';
+    if (stakeMeta) {
+        amountNode = <>-&thinsp;{format(stakeMeta.value, stakeMeta.decimals)}</>;
+        entry = stakeMeta.tokenName;
+    } else if (withdrawStakeRequest.amount) {
+        amountNode = <>+&thinsp;{format(withdrawStakeRequest.amount)}</>;
+        entry = BRAND_CONFIG.coinSymbolWithEx;
+    }
+
     return (
         <ListItemGrid>
             <ActivityIcon status={action.status}>
@@ -93,12 +104,8 @@ export const WithdrawRequestStakeAction: FC<{
             </ActivityIcon>
             <ColumnLayout
                 title={t('activityActionModal_withdrawal_request')}
-                amount={
-                    withdrawStakeRequest.amount ? (
-                        <>+&thinsp;{format(withdrawStakeRequest.amount)}</>
-                    ) : undefined
-                }
-                entry={withdrawStakeRequest.amount ? CryptoCurrency.TON : ''}
+                amount={amountNode}
+                entry={entry}
                 address={toAddressTextValue(
                     withdrawStakeRequest.pool.name,
                     formatAddress(withdrawStakeRequest.pool.address, network, true)

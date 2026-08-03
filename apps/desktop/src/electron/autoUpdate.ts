@@ -2,8 +2,8 @@ import { app, autoUpdater, BrowserWindow, webContents } from 'electron';
 
 export default class AppUpdate {
     constructor() {
-        autoUpdater.addListener('update-available', function (event: any) {
-            console.log('update available');
+        autoUpdater.addListener('update-available', function () {
+            console.info('update available');
         });
         autoUpdater.addListener(
             'update-downloaded',
@@ -20,10 +20,10 @@ export default class AppUpdate {
         const arch = process.arch; // Get the architecture dynamically (e.g., 'arm64', 'x64')
 
         autoUpdater.addListener('error', function (error) {
-            console.log(error);
+            console.error(error);
         });
-        autoUpdater.addListener('checking-for-update', function (event: any) {
-            console.log('checking-for-update');
+        autoUpdater.addListener('checking-for-update', function () {
+            console.info('checking-for-update');
         });
 
         // autoUpdater.addListener('update-not-available', function (event: any) {
@@ -42,8 +42,8 @@ export default class AppUpdate {
 }
 
 function notify(title: string, message: string) {
-    let windows = BrowserWindow.getAllWindows();
-    if (windows.length == 0) {
+    const windows = BrowserWindow.getAllWindows();
+    if (windows.length === 0) {
         return;
     }
 

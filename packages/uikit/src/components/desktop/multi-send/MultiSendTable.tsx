@@ -300,7 +300,6 @@ const MaximumReachedContainer = styled.div`
 
 const LinkStyled = styled(Link)`
     color: ${p => p.theme.textAccent};
-
     text-decoration: unset;
 
     &:hover {
@@ -508,7 +507,7 @@ const MultiSendFooter: FC<{
                 saveOnOpen();
             }
         }
-    }, [blocker.state]);
+    }, [blocker.state, listAlreadyExist, updateOnOpen, saveOnOpen]);
 
     const onClose = () => {
         if (blocker.state === 'blocked') {

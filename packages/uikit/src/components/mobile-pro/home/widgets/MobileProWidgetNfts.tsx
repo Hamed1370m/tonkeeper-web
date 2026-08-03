@@ -12,7 +12,6 @@ import { useFetchFilteredActivity } from '../../../../state/activity';
 
 const Wrapper = styled.div`
     padding: 0.5rem 0 1rem;
-
     border-bottom: 1px solid ${p => p.theme.separatorCommon};
 `;
 
@@ -45,7 +44,7 @@ export const useMobileProHomePageHistory = () => {
         if (activity && config && !config.cachedHasHistory) {
             mutateConfig({ cachedHasHistory: !!activity.length });
         }
-    }, [activity, config?.cachedHasHistory, mutateConfig]);
+    }, [activity, config, mutateConfig]);
 
     let showHistoryWidget = config?.cachedHasHistory !== false;
 
@@ -80,7 +79,7 @@ export const useMobileProHomePageNfts = () => {
         if (filteredNft && config && filteredNft.length !== config.cachedOwnCollectablesNumber) {
             mutateConfig({ cachedOwnCollectablesNumber: filteredNft.length });
         }
-    }, [filteredNft, config?.cachedOwnCollectablesNumber, mutateConfig]);
+    }, [filteredNft, config, mutateConfig]);
 
     let showNftWidget = !!config;
     if (config) {

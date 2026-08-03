@@ -37,7 +37,6 @@ const Wrapper = styled.form`
 const AssetImage = styled(Image)`
     width: 40px;
     height: 40px;
-
     border-radius: ${p => p.theme.cornerFull};
 `;
 
@@ -76,7 +75,7 @@ export const SelectWalletNetworks: FC<{ onContinue: (result: { tron: boolean }) 
         if (!isTronEnabledGlobally) {
             onContinue({ tron: false });
         }
-    }, [isTronEnabledGlobally]);
+    }, [isTronEnabledGlobally, onContinue]);
 
     if (!isTronEnabledGlobally) {
         return null;

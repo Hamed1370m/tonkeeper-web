@@ -218,6 +218,9 @@ export const useFetchFilteredActivity = (assetAddress?: string) => {
                           onlyInitiator,
                           filterSpam,
                           batteryAuthToken: batteryAuthToken ?? undefined
+                      }).catch(e => {
+                          console.error('Tron activity fetch failed:', e);
+                          return emptyResult;
                       })
             ]);
 
@@ -475,7 +478,7 @@ export const useHistoryFilters = () => {
             isInited = true;
             setFilters(f => ({ ...f, filterSpam: historyFilterSpam }));
         }
-    }, [historyFilterSpam]);
+    }, [historyFilterSpam, setFilters]);
 
     const toggleOnlyInitiator = useCallback(() => {
         setFilters(f => ({ ...f, onlyInitiator: !f.onlyInitiator }));
@@ -485,7 +488,7 @@ export const useHistoryFilters = () => {
         reset();
         mutate({ historyFilterSpam: !filters.filterSpam });
         setFilters(f => ({ ...f, filterSpam: !f.filterSpam }));
-    }, [setFilters, mutate, filters.filterSpam]);
+    }, [setFilters, mutate, filters.filterSpam, reset]);
 
     const setAsset = useCallback(
         (asset: Asset | undefined) => {
@@ -533,7 +536,7 @@ export const useScrollMonitor = (
         return () => {
             el?.removeEventListener('scroll', handleScroll);
         };
-    }, [element]);
+    }, [element, elementRef]);
 
     useLayoutEffect(() => {
         const timer = setInterval(() => {
@@ -544,7 +547,7 @@ export const useScrollMonitor = (
         return () => {
             clearInterval(timer);
         };
-    }, [isAtTop, callback]);
+    }, [isAtTop, callback, timeout]);
 
     return setElement as Dispatch<SetStateAction<HTMLDivElement | null>>;
 };

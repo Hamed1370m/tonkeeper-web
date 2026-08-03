@@ -6,23 +6,19 @@ import { ChevronLeftIcon } from './Icon';
 import { H3 } from './Text';
 import { RoundedButton } from './fields/RoundedButton';
 import { DesktopBackButton } from './desktop/DesktopViewLayout';
-import { useNavigate } from "../hooks/router/useNavigate";
+import { useNavigate } from '../hooks/router/useNavigate';
 
 export const WithHeadingDivider = styled.div``;
 
 const Block = styled(WithHeadingDivider)`
     flex-shrink: 0;
-
     padding: 1rem;
     box-sizing: border-box;
     display: flex;
     justify-content: center;
-
     z-index: 3;
     overflow: visible !important;
-
     top: 0;
-
     ${p =>
         p.theme.displayType === 'full-width'
             ? css`
@@ -34,13 +30,12 @@ const Block = styled(WithHeadingDivider)`
                   width: var(--app-width);
                   max-width: 548px;
               `}
-
     background: ${props => props.theme.backgroundPage};
 `;
 
 export const SybHeaderGlobalStyle = createGlobalStyle`
   body:not(.top) ${WithHeadingDivider} {
-    &:after {
+    &::after {
       content: '';
       display: block;
       width: 100%;

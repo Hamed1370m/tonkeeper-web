@@ -5,12 +5,15 @@
 
 import browser from 'webextension-polyfill';
 import { backgroundEventsEmitter, NotificationData, popUpEventEmitter } from '../event';
-import { Aptabase } from '@tonkeeper/uikit/dist/hooks/analytics';
 import { UserIdentityService } from '@tonkeeper/core/dist/user-identity';
 import { ExtensionStorage } from '../storage';
+import { AptabaseBackground } from '../aptabase-background';
+
+type PopUpEventName = Parameters<typeof popUpEventEmitter.emit>[0];
+type PopUpEventMessage = Parameters<typeof popUpEventEmitter.emit>[1];
 
 let popUpPort: browser.Runtime.Port;
-const portMessagesQueue: any[] = [];
+const portMessagesQueue: unknown[] = [];
 export const handlePopUpConnection = (port: browser.Runtime.Port) => {
     popUpPort = port;
 
@@ -19,7 +22,7 @@ export const handlePopUpConnection = (port: browser.Runtime.Port) => {
             popUpPort = port;
             portMessagesQueue.forEach(msg => popUpPort.postMessage(msg));
         } else {
-            popUpEventEmitter.emit<any>(message.method, message);
+            popUpEventEmitter.emit(message.method as PopUpEventName, message as PopUpEventMessage);
         }
     });
 
@@ -28,7 +31,7 @@ export const handlePopUpConnection = (port: browser.Runtime.Port) => {
     });
 };
 
-export function postMessageToPopup(data: any) {
+export function postMessageToPopup(data: unknown) {
     if (popUpPort) {
         popUpPort.postMessage(data);
     } else {
@@ -59,12 +62,12 @@ popUpEventEmitter.on('proxyChanged', message => {
 
 // End of proxy messages
 
-let aptabase: Aptabase;
+let aptabase: AptabaseBackground;
 const userIdentity = new UserIdentityService(new ExtensionStorage());
 
 popUpEventEmitter.on('userProperties', message => {
     const { aptabaseEndpoint, aptabaseKey, ...restParams } = message.params;
-    aptabase = new Aptabase({
+    aptabase = new AptabaseBackground({
         host: aptabaseEndpoint,
         key: aptabaseKey,
         appVersion: browser.runtime.getManifest().version,
@@ -75,5 +78,7 @@ popUpEventEmitter.on('userProperties', message => {
 });
 
 popUpEventEmitter.on('trackEvent', message => {
-    aptabase?.track(message.params.name, message.params.params);
+    aptabase
+        ?.track(message.params.name, message.params.params)
+        .catch(e => console.warn('Failed to send Aptabase event', e));
 });

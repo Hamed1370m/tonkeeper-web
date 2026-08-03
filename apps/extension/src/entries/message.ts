@@ -1,13 +1,11 @@
 export interface DAppMessage {
     id: number;
     method: string;
-    params: any;
+    params: unknown[];
     origin: string;
 }
 
-export type TonkeeperApiMessage =
-    | TonkeeperApiResponse
-    | TonkeeperApiTonConnectEvent;
+export type TonkeeperApiMessage = TonkeeperApiResponse | TonkeeperApiTonConnectEvent;
 
 export interface TonkeeperError {
     message: string;

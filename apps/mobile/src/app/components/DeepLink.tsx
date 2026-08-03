@@ -8,7 +8,6 @@ import { TonConnectConnectionParams } from '@tonkeeper/core/dist/service/tonConn
 import { TonConnectNotification } from '@tonkeeper/uikit/dist/components/connect/TonConnectNotification';
 import {
     useCompleteHttpConnection,
-    useProcessOpenedLink,
     useCompleteInjectedConnection
 } from '@tonkeeper/uikit/dist/components/connect/connectHook';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,6 +36,7 @@ import { capacitorTonConnectInjectedConnector } from '../../libs/ton-connect/cap
 import { CapacitorDappBrowser } from '../../libs/plugins/dapp-browser-plugin';
 import { useValueRef } from '@tonkeeper/uikit/dist/libs/common';
 import { TonConnectError } from '@tonkeeper/core/dist/entries/exception';
+import { useDeeplinkHandlers } from '@tonkeeper/uikit/dist/hooks/deeplinks/useDeeplinkHandlers';
 
 export const useMobileProPairSignerSubscription = () => {
     const { mutateAsync } = useParseAndAddSigner();
@@ -48,7 +48,7 @@ export const useMobileProPairSignerSubscription = () => {
                 onOpen({ accountId: acc.id });
             });
         });
-    }, []);
+    }, [mutateAsync, onOpen]);
 };
 
 const useInjectedBridgeConnectionSubscription = (
@@ -78,7 +78,7 @@ const useInjectedBridgeConnectionSubscription = (
                 });
             }
         );
-    }, []);
+    }, [setParams]);
 
     return ref;
 };
@@ -91,18 +91,21 @@ export const DeepLinkSubscription = () => {
         return subscribeToSignerResponse(val => {
             sdk.uiEvents.emit('signerTxResponse', { method: 'signerTxResponse', params: val });
         });
-    }, []);
+    }, [sdk.uiEvents]);
 
     const [params, setParams] = useState<TonConnectConnectionParams | null>(null);
     const paramsRef = useValueRef(params);
 
-    const onNewParamsReceived = useCallback((p: TonConnectConnectionParams | null) => {
-        if (p && paramsRef.current) {
-            throw new Error('New params received while old params not processed');
-        }
+    const onNewParamsReceived = useCallback(
+        (p: TonConnectConnectionParams | null) => {
+            if (p && paramsRef.current) {
+                throw new Error('New params received while old params not processed');
+            }
 
-        setParams(p);
-    }, []);
+            setParams(p);
+        },
+        [paramsRef]
+    );
 
     const injectedBridgeConnectionRef =
         useInjectedBridgeConnectionSubscription(onNewParamsReceived);
@@ -110,10 +113,10 @@ export const DeepLinkSubscription = () => {
         url: string;
         unsupportedLinkError?: string;
     } | null>(null);
-
-    const { mutateAsync, reset } = useProcessOpenedLink({
+    const { mutateAsync, reset } = useDeeplinkHandlers({
         hideLoadingToast: true,
-        hideErrorToast: true
+        hideErrorToast: true,
+        withBattery: true
     });
     const { onClose: closeTonTransaction } = useTonTransactionNotification();
 
@@ -183,7 +186,7 @@ export const DeepLinkSubscription = () => {
                 notifyError(unsupportedLinkError);
             }
         });
-    }, []);
+    }, [reset, onNewParamsReceived, mutateAsync, notifyError]);
 
     return (
         <>
@@ -214,6 +217,10 @@ const modifyLinkScheme = (link: string) => {
         switch (protocol) {
             case 'tonkeeper':
             case 'ton':
+                if (body.startsWith('swap')) {
+                    return null;
+                }
+
                 return `${tonkeeperMobileTonDeeplinkScheme}://${body}`;
             case 'tonkeeper-tc':
             case 'tc':
@@ -225,6 +232,8 @@ const modifyLinkScheme = (link: string) => {
                     return `${tonkeeperMobileTonConnectDeeplinkScheme}://${
                         link.split('ton-connect')[1]
                     }`;
+                } else if (isSwapPath(u.pathname)) {
+                    return null;
                 } else {
                     return `${tonkeeperMobileTonDeeplinkScheme}://${u.pathname.slice(1)}${
                         u.search
@@ -239,4 +248,13 @@ const modifyLinkScheme = (link: string) => {
         console.error(e);
         return null;
     }
+};
+
+const isSwapPath = (pathname: string) => {
+    let paths = pathname.split('/').slice(1);
+    if (paths[0] === 'pro') {
+        paths = paths.slice(1);
+    }
+
+    return paths.length === 1 && paths[0] === 'swap';
 };

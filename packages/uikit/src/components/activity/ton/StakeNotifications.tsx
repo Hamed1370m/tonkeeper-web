@@ -1,4 +1,5 @@
 import { CryptoCurrency } from '@tonkeeper/core/dist/entries/crypto';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import {
     AccountEvent,
     ActionStatusEnum,
@@ -41,7 +42,7 @@ const DepositStakeActionContent: FC<{
             <div>
                 <Title>{t('staking_deposit')}</Title>
                 <Amount>
-                    -&thinsp;{format(depositStake.amount)} {CryptoCurrency.TON}
+                    -&thinsp;{format(depositStake.amount)} {BRAND_CONFIG.coinSymbolWithEx}
                 </Amount>
                 <Amount>≈&thinsp;{fiatAmount}</Amount>
                 <ActionDate kind="send" timestamp={timestamp} />
@@ -96,7 +97,7 @@ const WithdrawStakeActionContent: FC<{
             <div>
                 <Title>{t('staking_withdraw')}</Title>
                 <Amount>
-                    +&thinsp;{format(withdrawStake.amount)} {CryptoCurrency.TON}
+                    +&thinsp;{format(withdrawStake.amount)} {BRAND_CONFIG.coinSymbolWithEx}
                 </Amount>
                 <Amount>≈&thinsp;{fiatAmount}</Amount>
                 <ActionDate kind="send" timestamp={timestamp} />
@@ -145,18 +146,26 @@ const WithdrawRequestStakeActionContent: FC<{
     const { data } = useRate(CryptoCurrency.TON);
     const format = useFormatCoinValue();
     const { fiatAmount } = useFormatFiat(data, formatDecimals(withdrawStakeRequest.amount ?? 0));
+    const stakeMeta = withdrawStakeRequest.stakeMeta;
 
     return (
         <ActionDetailsBlock event={event}>
             <div>
                 <Title>{t('activityActionModal_withdrawal_request')}</Title>
-                {withdrawStakeRequest.amount && (
-                    <>
-                        <Amount>
-                            +&thinsp;{format(withdrawStakeRequest.amount)} {CryptoCurrency.TON}
-                        </Amount>
-                        <Amount>≈&thinsp;{fiatAmount}</Amount>
-                    </>
+                {stakeMeta ? (
+                    <Amount>
+                        -&thinsp;{format(stakeMeta.value, stakeMeta.decimals)} {stakeMeta.tokenName}
+                    </Amount>
+                ) : (
+                    withdrawStakeRequest.amount && (
+                        <>
+                            <Amount>
+                                +&thinsp;{format(withdrawStakeRequest.amount)}{' '}
+                                {BRAND_CONFIG.coinSymbolWithEx}
+                            </Amount>
+                            <Amount>≈&thinsp;{fiatAmount}</Amount>
+                        </>
+                    )
                 )}
                 <ActionDate kind="send" timestamp={timestamp} />
                 <FailedDetail status={status} />

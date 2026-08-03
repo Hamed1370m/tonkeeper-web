@@ -1,6 +1,7 @@
 import { Address, beginCell, storeStateInit } from '@ton/core';
 import { getSecureRandomBytes, keyPairFromSeed, sha256_sync } from '@ton/crypto';
 import queryString from 'query-string';
+import { TargetEnv } from '../../AppSdk';
 import { IStorage } from '../../Storage';
 import { TonConnectError } from '../../entries/exception';
 import { Network } from '../../entries/network';
@@ -37,7 +38,7 @@ import {
 } from './connectionService';
 import { SessionCrypto } from './protocol';
 import { Account, getAccountByWalletById, isAccountSupportTonConnect } from '../../entries/account';
-import { eqOrigins, isLocalhost, originFromUrl } from '../../utils/url';
+import { eqOrigins, originFromUrl } from '../../utils/url';
 
 export const tonConnectTonkeeperAppName = 'tonkeeper';
 export const tonConnectTonkeeperProAppName = 'tonkeeper-pro';
@@ -156,10 +157,18 @@ export const getManifest = async (request: ConnectRequest) => {
         throw new Error('Manifest is not valid');
     }
 
+    const requestOrigin = originFromUrl(request.manifestUrl);
+    const manifestOrigin = originFromUrl(manifest.url);
+    if (!requestOrigin || !manifestOrigin || requestOrigin !== manifestOrigin) {
+        throw new Error(
+            'Manifest origin mismatch — manifest must be hosted on the same origin as declared in manifest.url'
+        );
+    }
+
     return manifest;
 };
 
-export function getBrowserPlatform(): DeviceInfo['platform'] {
+function getBrowserPlatform(): DeviceInfo['platform'] {
     const platform =
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window?.navigator as any)?.userAgentData?.platform || window?.navigator.platform;
@@ -188,6 +197,13 @@ export function getBrowserPlatform(): DeviceInfo['platform'] {
     }
 
     return os!;
+}
+
+export function getTonConnectPlatform(targetEnv: TargetEnv): DeviceInfo['platform'] {
+    if (targetEnv === 'extension') {
+        return 'browser';
+    }
+    return getBrowserPlatform();
 }
 
 export const getDeviceInfo = (
@@ -431,8 +447,8 @@ export const createTonProofItem = (
             value: proof.domainBuffer.toString('utf8') // app domain name (as url part, without encoding)
         },
         signature: Buffer.from(signature).toString('base64'), // base64-encoded signature
-        payload: proof.payload, // payload from the request,
-        stateInit: stateInit // state init for a wallet
+        payload: proof.payload, // payload from the request
+        ...(stateInit !== undefined && { stateInit }) // state init for a wallet (only if defined)
     };
 };
 
@@ -544,12 +560,13 @@ export const sendTransactionSuccessResponse = (
 
 export const sendBadRequestResponse = (
     id: string,
-    name: string
+    name: string,
+    message = `Method "${name}" is not supported by the wallet app`
 ): SendTransactionRpcResponseError => {
     return {
         error: {
             code: SEND_TRANSACTION_ERROR_CODES.BAD_REQUEST_ERROR,
-            message: `Method "${name}" does not supported by the wallet app`
+            message
         },
         id
     };
@@ -562,10 +579,6 @@ export function checkDappOriginMatchesManifest(params: {
     const manifestOrigin = originFromUrl(params.manifestUrl);
     if (!manifestOrigin) {
         return false;
-    }
-
-    if (isLocalhost(params.origin)) {
-        return true;
     }
 
     return eqOrigins(params.origin, manifestOrigin);

@@ -121,9 +121,9 @@ export const estimateWalletContractExecutionGasFee = (config: BlockchainConfig, 
     }
 
     function countBitsAndCellsInMsg(msg: Cell, hashes: Set<Buffer>): [number, number] {
-        let temp = hashes.size;
+        const temp = hashes.size;
         hashes.add(msg.hash());
-        if (hashes.size == temp) {
+        if (hashes.size === temp) {
             return [0, 0];
         }
 
@@ -132,7 +132,7 @@ export const estimateWalletContractExecutionGasFee = (config: BlockchainConfig, 
 
         for (let i = 0; i < msg.refs.length; i++) {
             const ref = msg.refs[i];
-            let [innerBits, innerCells] = countBitsAndCellsInMsg(ref, hashes);
+            const [innerBits, innerCells] = countBitsAndCellsInMsg(ref, hashes);
             bits += innerBits;
             cells += innerCells;
         }
@@ -149,7 +149,7 @@ export const estimateWalletContractExecutionGasFee = (config: BlockchainConfig, 
     let [msgBits, msgCells] = [0, 0];
     const inMsg = inMsgs[0];
     for (const ref of inMsg.refs) {
-        let [innerMsgBits, innerMsgCells] = countBitsAndCellsInMsg(ref, inMsgHashes);
+        const [innerMsgBits, innerMsgCells] = countBitsAndCellsInMsg(ref, inMsgHashes);
         msgBits += innerMsgBits;
         msgCells += innerMsgCells;
     }
@@ -171,7 +171,7 @@ export const estimateWalletContractExecutionGasFee = (config: BlockchainConfig, 
     const gasFee = computeGasFee(walletVersion);
     const importFee = computeImportFee(msgBits, msgCells);
 
-    const base = BigInt(msgFwdFee + gasFee + importFee);
+    const base = BigInt(Math.ceil(msgFwdFee + gasFee + importFee));
 
     return (base * GAS_SAFETY_MULTIPLIER) / GAS_SAFETY_MULTIPLIER_DENOMINATOR;
 };

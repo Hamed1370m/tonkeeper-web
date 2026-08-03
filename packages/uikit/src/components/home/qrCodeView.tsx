@@ -11,22 +11,22 @@ export const QrWrapper = styled.div`
 `;
 
 function chunks<T>(arr: T[], len: number): T[][] {
-    var chunks: T[][] = [],
-        i = 0,
-        n = arr.length;
+    const result: T[][] = [];
+    const n = arr.length;
+    let i = 0;
 
     while (i < n) {
-        chunks.push(arr.slice(i, (i += len)));
+        result.push(arr.slice(i, (i += len)));
     }
 
-    return chunks;
+    return result;
 }
 
 export const AnimatedQrCode: FC<{ message: string }> = React.memo(({ message }) => {
     const [value, setValue] = useState('');
 
     useEffect(() => {
-        let arr = [...message];
+        const arr = [...message];
 
         const items = chunks(arr, 256);
 
@@ -35,7 +35,7 @@ export const AnimatedQrCode: FC<{ message: string }> = React.memo(({ message }) 
         } else {
             let count = 0;
             const timer = setInterval(() => {
-                let current = items[count];
+                const current = items[count];
                 setValue(current.join(''));
 
                 // increment our counter
@@ -69,7 +69,7 @@ export const AnimatedQrCode: FC<{ message: string }> = React.memo(({ message }) 
 export const KeystoneAnimatedQRCode: FC<{ data: UR }> = ({ data }) => {
     const urEncoder = useMemo(() => {
         return new UREncoder(data);
-    }, []);
+    }, [data]);
 
     const [value, setValue] = useState(urEncoder.nextPart());
 
@@ -80,7 +80,7 @@ export const KeystoneAnimatedQRCode: FC<{ data: UR }> = ({ data }) => {
         return () => {
             clearInterval(interval);
         };
-    }, []);
+    }, [urEncoder]);
 
     return (
         <QrWrapper>

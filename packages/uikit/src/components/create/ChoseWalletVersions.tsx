@@ -36,7 +36,6 @@ const Wrapper = styled.form`
 const Body = styled(Body1)`
     user-select: none;
     margin-bottom: 1rem;
-
     text-align: center;
     color: ${props => props.theme.textSecondary};
 
@@ -61,14 +60,6 @@ const Body2Secondary = styled(Body2)`
     color: ${props => props.theme.textSecondary};
 `;
 
-const SubmitBlock = styled.div`
-    padding-top: 16px;
-    flex: 1;
-    display: flex;
-    align-items: flex-end;
-    width: 100%;
-`;
-
 export const ChoseWalletVersionsByMnemonic: FC<{
     mnemonic: string[];
     mnemonicType: MnemonicType;
@@ -82,7 +73,7 @@ export const ChoseWalletVersionsByMnemonic: FC<{
         mnemonicToKeypair(mnemonic, mnemonicType).then(keypair =>
             setPublicKey(keypair.publicKey.toString('hex'))
         );
-    }, [mnemonic]);
+    }, [mnemonic, mnemonicType]);
 
     return (
         <ChoseWalletVersions
@@ -127,7 +118,7 @@ export const ChoseWalletVersions: FC<{
         if (sdk.isIOs()) {
             hideIosKeyboard();
         }
-    }, []);
+    }, [sdk]);
 
     useLayoutEffect(() => {
         if (filteredWallets) {
@@ -143,7 +134,7 @@ export const ChoseWalletVersions: FC<{
             }
             setCheckedVersions(versionsToCheck);
         }
-    }, [filteredWallets, accountState]);
+    }, [filteredWallets, accountState, defaultWalletVersion]);
 
     const toggleVersion = (version: WalletVersion, isChecked: boolean) => {
         setCheckedVersions(state =>

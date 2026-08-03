@@ -1,3 +1,7 @@
 FROM openapitools/openapi-generator-cli
 
-CMD ["generate", "-i", "https://raw.githubusercontent.com/tonkeeper/tonkeeper_2fa_backend/refs/heads/main/swagger.yaml?token=GHSAT0AAAAAACJYQUOCG3M3IRKQM3KPJSAUZ3MA5IA", "-g", "typescript-fetch", "-o", "/local/src/2faApi", "-p", "supportsES6=true,withInterfaces=true", "--openapi-normalizer", "KEEP_ONLY_FIRST_TAG_IN_OPERATION=true"]
+COPY resource/generate_openapi_client.sh /generate_openapi_client.sh
+RUN chmod +x /generate_openapi_client.sh
+
+ENTRYPOINT ["/generate_openapi_client.sh"]
+CMD ["https://raw.githubusercontent.com/tonkeeper/tonkeeper_2fa_backend/refs/heads/main/swagger.yaml", "/local/src/2faApi"]

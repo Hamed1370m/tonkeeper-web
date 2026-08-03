@@ -1,4 +1,5 @@
 import styled, { css, useTheme } from 'styled-components';
+import { BRAND_CONFIG } from '@tonkeeper/core/dist/config/brand';
 import { Body1Class, Body2Class, Body3, Body3Class, Label1Class } from '../Text';
 import { useTranslation } from '../../hooks/translation';
 import {
@@ -31,6 +32,7 @@ import { FLAGGED_FEATURE, useIsFeatureEnabled } from '../../state/tonendpoint';
 import { useProState } from '../../state/pro';
 import { isTelegramActiveSubscription } from '@tonkeeper/core/dist/entries/pro';
 import { useProAuthNotification } from '../modals/ProAuthNotificationControlled';
+import { useIsFullWidthMode } from '../../hooks/useIsFullWidthMode';
 
 const SmallDivider = styled.div`
     width: 100%;
@@ -50,7 +52,6 @@ const TransfersNumberStatusWrapper = styled.div`
     grid-template-columns: auto auto 1fr;
     align-items: center;
     gap: 6px;
-
     ${Body3Class};
     grid-template-areas: 'a b c';
 
@@ -78,9 +79,11 @@ const TransfersNumberStatusWrapper = styled.div`
     > *:first-child {
         grid-area: a;
     }
+
     > *:nth-child(2) {
         grid-area: b;
     }
+
     > *:nth-child(3) {
         grid-area: c;
     }
@@ -231,7 +234,6 @@ const TableFirsLineText = styled.span`
         css`
             ${Body1Class};
         `}
-}
 `;
 
 const TableSecondLineText = styled(Body3)`
@@ -270,6 +272,7 @@ const FeeTable = () => {
     const { onOpen: onGetPro } = useProFeaturesNotification();
     const { onOpen: onProAuthOpen } = useProAuthNotification();
     const isTronEnabled = useIsFeatureEnabled(FLAGGED_FEATURE.TRON);
+    const isFullWidthMode = useIsFullWidthMode();
 
     const hasBatteryTransfers = typeof batteryTransfers === 'number' && batteryTransfers > 0;
 
@@ -293,7 +296,7 @@ const FeeTable = () => {
 
     return (
         <TableWrapper>
-            {isTronEnabled && (
+            {isTronEnabled && isFullWidthMode && (
                 <TableRow>
                     <TableFirsLineText>{t('tron_fee_table_free_transfer_title')}</TableFirsLineText>
                     {trc20FreeTransfers === undefined ? (
@@ -373,7 +376,7 @@ const FeeTable = () => {
             )}
             {isTronEnabled && (
                 <TableRowTemplate
-                    heading="Toncoin"
+                    heading={BRAND_CONFIG.coinName}
                     formattedBalance={tonBalance?.stringAssetRelativeAmount}
                     transfersNumber={tonTransfers}
                     fiatPerTransfer={tonSenderFee.fiatAmount}

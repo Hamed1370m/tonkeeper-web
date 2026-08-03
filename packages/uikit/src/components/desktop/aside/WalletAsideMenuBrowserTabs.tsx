@@ -13,26 +13,31 @@ import styled, { useTheme } from 'styled-components';
 import { Label2 } from '../../Text';
 import { useMenuController } from '../../../hooks/ionic';
 import { Button, ButtonFlat } from '../../fields/Button';
-import {
+import React, {
     createContext,
     Dispatch,
     FC,
+    forwardRef,
     SetStateAction,
     useContext,
     useEffect,
+    useLayoutEffect,
     useState
 } from 'react';
-import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
+import { closestCenter, DndContext, DragEndEvent } from '@dnd-kit/core';
+import {
+    SortableContext,
+    useSortable,
+    verticalListSortingStrategy,
+    arrayMove
+} from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { CloseIcon, PinIconOutline, ReorderIcon16, UnpinIconOutline } from '../../Icon';
 import { IconButtonTransparentBackground } from '../../fields/IconButton';
 import { useAppSdk } from '../../../hooks/appSdk';
 import { useTranslation } from '../../../hooks/translation';
-import {
-    AnalyticsEventDappClick,
-    AnalyticsEventDappPin,
-    AnalyticsEventDappUnpin
-} from '@tonkeeper/core/dist/analytics';
 import { useCountryContextTracker } from '../../../hooks/analytics/events-hooks';
+import { useSortableDndSensors } from '../../../hooks/useSortableDndSensors';
 
 const AsideMenuItemStyled = styled(AsideMenuItem)`
     background: ${p => (p.isSelected ? p.theme.backgroundContentTint : p.theme.backgroundPage)};
@@ -116,14 +121,12 @@ const useEditMode = () => {
     const onClickTab = (tab: BrowserTab) => {
         if (!isEditMode) {
             closeWalletMenu();
-            trackDappOpened(
-                country =>
-                    new AnalyticsEventDappClick({
-                        location: country,
-                        url: tab.url,
-                        from: 'sidebar'
-                    })
-            );
+            trackDappOpened(country => ({
+                eventName: 'dapp_click',
+                location: country,
+                url: tab.url,
+                from: 'sidebar'
+            }));
             openTab(tab);
         }
     };
@@ -132,7 +135,7 @@ const useEditMode = () => {
         if (!isOpen) {
             setIsEditMode(false);
         }
-    }, [isOpen]);
+    }, [isOpen, setIsEditMode]);
 
     return {
         isEditMode,
@@ -172,6 +175,67 @@ export const WalletAsideMenuBrowserTabs = () => {
     );
 };
 
+type BrowserTabRowProps = {
+    tab: BrowserTab;
+    isEditMode: boolean;
+    openedTabId: string | undefined;
+    onClickTab: (tab: BrowserTab) => void;
+    unpinTab: (tab: BrowserTab) => void;
+};
+
+const BrowserTabRow = forwardRef<
+    HTMLDivElement,
+    BrowserTabRowProps & React.HTMLAttributes<HTMLDivElement>
+>(({ tab, isEditMode, openedTabId, onClickTab, unpinTab, ...rest }, ref) => {
+    return (
+        <AsideMenuItemStyled
+            ref={ref}
+            isSelected={tab.id === openedTabId}
+            onClick={() => onClickTab(tab)}
+            {...rest}
+        >
+            <LeftIconButton $hidden={!isEditMode}>
+                <ReorderIcon16 />
+            </LeftIconButton>
+            <img
+                src={tab.iconUrl}
+                onError={e => {
+                    e.currentTarget.style.visibility = 'hidden';
+                }}
+            />
+            <Label2>{tab.title}</Label2>
+            {isEditMode && (
+                <RightIconButton onClick={() => unpinTab(tab)}>
+                    <UnpinIconOutline />
+                </RightIconButton>
+            )}
+        </AsideMenuItemStyled>
+    );
+});
+
+const SortableBrowserTab: FC<BrowserTabRowProps> = props => {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+        id: props.tab.id
+    });
+
+    const style: React.CSSProperties = {
+        transform: transform ? `translate3d(0, ${transform.y}px, 0)` : undefined,
+        transition,
+        zIndex: isDragging ? 1 : undefined,
+        position: isDragging ? 'relative' : undefined
+    };
+
+    return (
+        <BrowserTabRow
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...(props.isEditMode ? listeners : {})}
+            {...props}
+        />
+    );
+};
+
 const BrowserTabsPinned: FC<{
     tabs: BrowserTab[];
     onUpdateOrder: (tabs: BrowserTab[]) => void;
@@ -182,68 +246,37 @@ const BrowserTabsPinned: FC<{
     const { mutate: changeBrowserTab } = useChangeBrowserTab();
     const sdk = useAppSdk();
     const track = useCountryContextTracker();
+    const sensors = useSortableDndSensors();
 
-    const handleDragEnd = (result: DropResult) => {
-        if (!result.destination || !tabs) return;
-        const updated = [...tabs];
-        const [moved] = updated.splice(result.source.index, 1);
-        updated.splice(result.destination.index, 0, moved);
-        onUpdateOrder(updated);
+    const [optimisticTabs, setOptimisticTabs] = useState(tabs);
+
+    useLayoutEffect(() => {
+        setOptimisticTabs(tabs);
+    }, [tabs]);
+
+    const handleDragStart = () => {
+        sdk.hapticNotification('impact_medium');
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || !optimisticTabs || active.id === over.id) return;
+        const oldIndex = optimisticTabs.findIndex(tab => tab.id === active.id);
+        const newIndex = optimisticTabs.findIndex(tab => tab.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+        const reordered = arrayMove([...optimisticTabs], oldIndex, newIndex);
+        setOptimisticTabs(reordered);
+        onUpdateOrder(reordered);
     };
 
     const unpinTab = (tab: BrowserTab) => {
         changeBrowserTab({ ...tab, isPinned: false });
-        track(country => new AnalyticsEventDappUnpin({ url: tab.url, location: country }));
+        track(country => ({ eventName: 'dapp_unpin', url: tab.url, location: country }));
     };
 
     if (!tabs) {
         return null;
     }
-
-    const renderTabItem = (tab: BrowserTab, index: number) => (
-        <Draggable key={tab.id} draggableId={tab.id} index={index}>
-            {(provided, snapshotDrag) => {
-                let transform = provided.draggableProps.style?.transform;
-
-                if (snapshotDrag.isDragging && transform) {
-                    transform = transform.replace(/\(.+\,/, '(0,');
-                }
-
-                const style: Record<string, unknown> = {
-                    ...provided.draggableProps.style,
-                    transform,
-                    left: '8px'
-                };
-
-                return (
-                    <AsideMenuItemStyled
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        style={style}
-                        isSelected={tab.id === openedTabId}
-                        onClick={() => onClickTab(tab)}
-                        {...(isEditMode && provided.dragHandleProps)}
-                    >
-                        <LeftIconButton $hidden={!isEditMode}>
-                            <ReorderIcon16 />
-                        </LeftIconButton>
-                        <img
-                            src={tab.iconUrl}
-                            onError={e => {
-                                e.currentTarget.style.visibility = 'hidden';
-                            }}
-                        />
-                        <Label2>{tab.title}</Label2>
-                        {isEditMode && (
-                            <RightIconButton onClick={() => unpinTab(tab)}>
-                                <UnpinIconOutline />
-                            </RightIconButton>
-                        )}
-                    </AsideMenuItemStyled>
-                );
-            }}
-        </Draggable>
-    );
 
     return (
         <GroupWrapper>
@@ -257,19 +290,29 @@ const BrowserTabsPinned: FC<{
                 </EditButton>
             </HeadingWrapper>
 
-            <DragDropContext
+            <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
-                onDragStart={() => sdk.hapticNotification('impact_medium')}
+                onDragStart={handleDragStart}
+                modifiers={[restrictToVerticalAxis]}
             >
-                <Droppable droppableId="browserTabs" direction="vertical">
-                    {provided => (
-                        <div ref={provided.innerRef} {...provided.droppableProps}>
-                            {tabs?.map((tab, index) => renderTabItem(tab, index))}
-                            {provided.placeholder}
-                        </div>
-                    )}
-                </Droppable>
-            </DragDropContext>
+                <SortableContext
+                    items={optimisticTabs.map(tab => tab.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    {optimisticTabs.map(tab => (
+                        <SortableBrowserTab
+                            key={tab.id}
+                            tab={tab}
+                            isEditMode={isEditMode}
+                            openedTabId={openedTabId}
+                            onClickTab={onClickTab}
+                            unpinTab={unpinTab}
+                        />
+                    ))}
+                </SortableContext>
+            </DndContext>
         </GroupWrapper>
     );
 };
@@ -300,7 +343,7 @@ const BrowserTabsNonPinned: FC<{ tabs: BrowserTab[] }> = ({ tabs }) => {
 
     const pinTab = (tab: BrowserTab) => {
         changeBrowserTab({ ...tab, isPinned: true });
-        track(country => new AnalyticsEventDappPin({ url: tab.url, location: country }));
+        track(country => ({ eventName: 'dapp_pin', url: tab.url, location: country }));
     };
 
     if (!tabs) {

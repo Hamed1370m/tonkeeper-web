@@ -3,7 +3,7 @@ import React, { FC } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from '../../hooks/translation';
 import { TokenRate } from '../../state/rates';
-import { Body2, Label1, Label4 } from '../Text';
+import { Body2, Body3, Label1, Label4 } from '../Text';
 import { Image } from '../shared/Image';
 
 export const ListItemPayload = styled.div`
@@ -27,7 +27,6 @@ export const TokenLogo = styled(Image)`
     width: 44px;
     height: 44px;
     border-radius: ${props => props.theme.cornerFull};
-
     pointer-events: none;
 
     ${p =>
@@ -40,10 +39,8 @@ export const TokenLogo = styled(Image)`
 
 const Description = styled.div`
     flex-grow: 1;
-
     display: flex;
     flex-direction: column;
-
     white-space: nowrap;
 `;
 
@@ -57,7 +54,6 @@ const FirstLine = styled.div`
 const CoinName = styled(Label1)`
     text-overflow: ellipsis;
     overflow: hidden;
-
     display: flex;
     align-items: center;
 `;
@@ -79,8 +75,31 @@ const SecondLine = styled.div`
     justify-content: space-between;
 `;
 
+const ThirdLine = styled.div`
+    display: flex;
+    justify-content: flex-start;
+    min-width: 0;
+`;
+
 const Secondary = styled(Body2)`
     color: ${props => props.theme.textSecondary};
+`;
+
+const TertiaryText = styled(Body3)`
+    color: ${props => props.theme.textSecondary};
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+`;
+
+const TertiaryMultiline = styled(Body3)`
+    color: ${props => props.theme.textSecondary};
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+    min-width: 0;
+    white-space: normal;
 `;
 
 const Symbol = styled(Label1)`
@@ -96,11 +115,12 @@ export const TokenLayout: FC<{
     symbol?: string;
     balance: string;
     secondary: React.ReactNode;
+    tertiary?: React.ReactNode;
     fiatAmount?: string;
     label?: string;
     rate: TokenRate | undefined;
     verification?: JettonVerificationType;
-}> = ({ name, symbol, balance, secondary, fiatAmount, label, rate, verification }) => {
+}> = ({ name, symbol, balance, secondary, tertiary, fiatAmount, label, rate, verification }) => {
     const { t } = useTranslation();
 
     return (
@@ -125,22 +145,31 @@ export const TokenLayout: FC<{
                 </Secondary>
                 <Secondary>{fiatAmount}</Secondary>
             </SecondLine>
+            {tertiary ? (
+                <ThirdLine>
+                    {typeof tertiary === 'string' ? (
+                        <TertiaryText>{tertiary}</TertiaryText>
+                    ) : (
+                        <TertiaryMultiline>{tertiary}</TertiaryMultiline>
+                    )}
+                </ThirdLine>
+            ) : null}
         </Description>
     );
 };
 
 const DeltaColor = styled.span<{ positive: boolean }>`
-  margin-left: 0.5rem;
-  opacity: 0.64;
+    margin-left: 0.5rem;
+    opacity: 0.64;
 
-  ${props =>
-      props.positive
-          ? css`
-                color: ${props.theme.accentGreen};
-            `
-          : css`
-                color: ${props.theme.accentRed};
-            `}}
+    ${props =>
+        props.positive
+            ? css`
+                  color: ${props.theme.accentGreen};
+              `
+            : css`
+                  color: ${props.theme.accentRed};
+              `}
 `;
 
 const Delta: FC<{ data: TokenRate | undefined }> = ({ data }) => {

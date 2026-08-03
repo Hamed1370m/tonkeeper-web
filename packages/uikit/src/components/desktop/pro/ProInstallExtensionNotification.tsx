@@ -98,7 +98,7 @@ const ProInstallExtensionNotificationContent: FC<
             selectedWallet: targetAuth.wallet,
             ...extensionData
         });
-    }, [targetAuth?.wallet]);
+    }, [targetAuth?.wallet, estimateFeeMutation, extensionData]);
 
     const price = useMemo(
         () =>
@@ -247,7 +247,6 @@ const ListItemStyled = styled(ListItem)`
 const ListItemPayloadStyled = styled(ListItemPayload)<{ alignItems?: string }>`
     padding-top: 10px;
     padding-bottom: 10px;
-
     align-items: ${({ alignItems }) => alignItems ?? 'center'};
 `;
 

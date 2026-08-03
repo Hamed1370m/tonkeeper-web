@@ -1,13 +1,12 @@
 import { NFT } from '@tonkeeper/core/dist/entries/nft';
 import React, { FC, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
 import styled, { css } from 'styled-components';
 import { useTranslation } from '../../hooks/translation';
 import { Label1 } from '../Text';
 import { NftsList } from '../nft/Nfts';
 import { JettonList } from './Jettons';
-import { AssetAmount } from '@tonkeeper/core/dist/entries/crypto/asset/asset-amount';
 import { useSearchParams } from '../../hooks/router/useSearchParams';
+import { PortfolioBalance } from '../../state/portfolio/usePortfolioBalances';
 
 const TabsBlock = styled.div`
     display: flex;
@@ -16,13 +15,11 @@ const TabsBlock = styled.div`
     position: relative;
     justify-content: center;
     gap: 2.25rem;
-
     user-select: none;
 `;
 
 const TabsButton = styled.div<{ active?: boolean }>`
     cursor: pointer;
-
     padding: 0.5rem;
     margin: -0.5rem;
     box-sizing: border-box;
@@ -40,7 +37,7 @@ const TabsButton = styled.div<{ active?: boolean }>`
 const Line = styled.div`
     position: absolute;
     height: 3px;
-    width: 0px;
+    width: 0;
     bottom: -0.5rem;
     border-radius: ${props => props.theme.corner3xSmall};
     background: ${props => props.theme.accentBlue};
@@ -93,17 +90,16 @@ const Tabs: FC<{ tab: HomeTabs; onTab: (value: HomeTabs) => void }> = ({ tab, on
 const collectibles = 'collectibles';
 
 export const TabsView: FC<{
-    assets: AssetAmount[];
+    balances: PortfolioBalance[];
     nfts: NFT[];
-}> = ({ assets, nfts }) => {
-    const location = useLocation();
+}> = ({ balances, nfts }) => {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const tab = useMemo(() => {
         return new URLSearchParams(searchParams).get(collectibles) === 'open'
             ? HomeTabs.COLLECTIBLES
             : HomeTabs.TOKENS;
-    }, [searchParams, location]);
+    }, [searchParams]);
 
     const onTab = useCallback(
         (value: HomeTabs) => {
@@ -127,7 +123,7 @@ export const TabsView: FC<{
             {tab === HomeTabs.COLLECTIBLES ? (
                 <NftsList nfts={nfts} />
             ) : (
-                <JettonList assets={assets} />
+                <JettonList balances={balances} />
             )}
         </>
     );
